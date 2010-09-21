@@ -17,15 +17,17 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 *******************************************************************************/
 
+#ifndef YAED_SPIDER_H
+#define YAED_SPIDER_H
+
 #include <stdbool.h>
-#include <gtk/gtk.h>
 
-#include "spider.h"
+#include "source-view.h"
 
-int main(int argc, char *argv[])
-{
-  gtk_init(&argc, &argv);
-  if(true == yaedSpiderInit())
-    gtk_main();
-  return 0;
-}
+//set up initial window(s) tab(s) etc.
+bool yaedSpiderInit();
+
+//called by any component that wishes a view to close
+bool yaedSpiderRequestViewClose(YaedSourceViewHandle view);
+
+#endif

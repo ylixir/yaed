@@ -17,15 +17,9 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 *******************************************************************************/
 
-#include <stdbool.h>
-#include <gtk/gtk.h>
+#ifndef YAED_SOURCE_VIEW_H
+#define YAED_SOURCE_VIEW_H
 
-#include "spider.h"
+typedef struct YaedSourceView *YaedSourceViewHandle;
 
-int main(int argc, char *argv[])
-{
-  gtk_init(&argc, &argv);
-  if(true == yaedSpiderInit())
-    gtk_main();
-  return 0;
-}
+#endif
