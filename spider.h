@@ -21,6 +21,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #define YAED_SPIDER_H
 
 #include <stdbool.h>
+#include <gtk/gtk.h>
 
 #include "source-view.h"
 

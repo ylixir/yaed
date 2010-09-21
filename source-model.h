@@ -17,22 +17,22 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 *******************************************************************************/
 
-#ifndef YAED_SOURCE_VIEW_H
-#define YAED_SOURCE_VIEW_H
+#ifndef YAED_SOURCE_MODEL_H
+#define YAED_SOURCE_MODEL_H
 
-#include "source-model.h"
+#include <gtk/gtk.h>
+#include <gtksourceview/gtksourceview.h>
 
 //the public type that provides instances of this module
-typedef struct YaedSourceView *YaedSourceViewHandle;
+typedef struct YaedSourceModel *YaedSourceModelHandle;
 
 /* public functions */
 
-//get a new view for the given model
-YaedSourceViewHandle yaedSourceViewNew(YaedSourceModelHandle model);
+//create a new model from the given location
+YaedSourceModelHandle yaedSourceModelNew(GString* location);
 
-//get the gtk widgets that implement the tab for the view
-GtkWidget* yaedSourceViewLabelWidget(YaedSourceViewHandle view);
-GtkWidget* yaedSourceViewContentsWidget(YaedSourceViewHandle view);
-
+//get the location string, or the buffer object for the model
+GString* yaedSourceModelLocation(YaedSourceModelHandle model);
+GtkSourceBuffer* yaedSourceModelBuffer(YaedSourceModelHandle model);
 
 #endif
