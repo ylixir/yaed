@@ -19,6 +19,10 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 #include "spider.h"
 
+/*
+ * private types
+ */
+
 //a list of all the windows that belong to the application
 struct YaedWindowList
 {
@@ -35,6 +39,10 @@ struct YaedViewList
   YaedSourceModelHandle model;
   GtkWindow* window;
 } *views;
+
+/*
+ * public functions
+ */
 
 //set up initial window(s) tab(s) etc.
 bool yaedSpiderInit()

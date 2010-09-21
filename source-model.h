@@ -26,7 +26,9 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 //the public type that provides instances of this module
 typedef struct YaedSourceModel *YaedSourceModelHandle;
 
-/* public functions */
+/*
+ * public functions
+ */
 
 //create a new model from the given location
 YaedSourceModelHandle yaedSourceModelNew(GString* location);
