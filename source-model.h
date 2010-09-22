@@ -31,10 +31,10 @@ typedef struct YaedSourceModel *YaedSourceModelHandle;
  */
 
 //create a new model from the given location
-YaedSourceModelHandle yaedSourceModelNew(GString* location);
+YaedSourceModelHandle yaedSourceModelNew(const GString* location);
 
 //get the location string, or the buffer object for the model
-GString* yaedSourceModelLocation(YaedSourceModelHandle model);
-GtkSourceBuffer* yaedSourceModelBuffer(YaedSourceModelHandle model);
+GString* yaedSourceModelLocation(const YaedSourceModelHandle model);
+GtkSourceBuffer* yaedSourceModelBuffer(const YaedSourceModelHandle model);
 
 #endif

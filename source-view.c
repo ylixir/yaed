@@ -34,7 +34,7 @@ struct YaedSourceView
  */
 
 //get a new view for the given model
-YaedSourceViewHandle yaedSourceViewNew(YaedSourceModelHandle model)
+YaedSourceViewHandle yaedSourceViewNew(const YaedSourceModelHandle model)
 {
   //the return value
   YaedSourceViewHandle view = NULL;
@@ -69,7 +69,7 @@ YaedSourceViewHandle yaedSourceViewNew(YaedSourceModelHandle model)
 }
 
 //get the gtk widget that implements the tab label for the view
-GtkWidget* yaedSourceViewLabelWidget(YaedSourceViewHandle view)
+GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view)
 {
   //if we got a bogus view, return null, otherwise pass out the label widget
   GtkWidget* widget = NULL;
@@ -81,7 +81,7 @@ GtkWidget* yaedSourceViewLabelWidget(YaedSourceViewHandle view)
 }
 
 //get the gtk widget that implement the tab contents for the view
-GtkWidget* yaedSourceViewContentsWidget(YaedSourceViewHandle view)
+GtkWidget* yaedSourceViewContentsWidget(const YaedSourceViewHandle view)
 {
   //if we got a bogus view, return null, otherwise pass out the contents widget
   GtkWidget* widget = NULL;

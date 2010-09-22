@@ -53,8 +53,8 @@ gboolean yaedTabLabelClosePress(GtkWidget* box,
  */
 
 //make a new label for the view from the model
-YaedTabLabelHandle yaedTabLabelNew( YaedSourceModelHandle model,
-                                    YaedSourceViewHandle view)
+YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
+                                    const YaedSourceViewHandle view)
 {
   //the return value
   YaedTabLabelHandle label = NULL;
@@ -111,7 +111,7 @@ YaedTabLabelHandle yaedTabLabelNew( YaedSourceModelHandle model,
 }
 
 //get the GtkWidget for the label
-GtkWidget* yaedTabLabelWidget(YaedTabLabelHandle label)
+GtkWidget* yaedTabLabelWidget(const YaedTabLabelHandle label)
 {
   return NULL == label ? NULL : (GtkWidget*)label->box;
 }

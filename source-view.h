@@ -28,11 +28,11 @@ typedef struct YaedSourceView *YaedSourceViewHandle;
 /* public functions */
 
 //get a new view for the given model
-YaedSourceViewHandle yaedSourceViewNew(YaedSourceModelHandle model);
+YaedSourceViewHandle yaedSourceViewNew(const YaedSourceModelHandle model);
 
 //get the gtk widgets that implement the tab for the view
-GtkWidget* yaedSourceViewLabelWidget(YaedSourceViewHandle view);
-GtkWidget* yaedSourceViewContentsWidget(YaedSourceViewHandle view);
+GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view);
+GtkWidget* yaedSourceViewContentsWidget(const YaedSourceViewHandle view);
 
 
 #endif
