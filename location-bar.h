@@ -16,33 +16,31 @@ You should have received a copy of the Artistic License 2.0
 along with yAEd.  If not, see <http://www.perlfoundation.org>.
 *******************************************************************************/
 
-#ifndef YAED_TAB_CONTENTS_H
-#define YAED_TAB_CONTENTS_H
+#ifndef YAED_LOCATION_BAR_H
+#define YAED_LOCATION_BAR_H
 
 #include <gtk/gtk.h>
 
 #include "source-model.h"
-#include "source-view.h"
 
 /*
  * public types
  */
 
 //opaque type that instantiates this module
-typedef struct YaedTabContents* YaedTabContentsHandle;
+typedef struct YaedLocationBar* YaedLocationBarHandle;
 
 /*
  * public functions
  */
 
-//make a new content pane for a tab
-YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
-                                          const YaedSourceViewHandle view);
+//create a new location bar
+YaedLocationBarHandle yaedLocationBarNew(const YaedSourceModelHandle model);
 
-//get the gtk widget
-GtkWidget* yaedTabContentsWidget(const YaedTabContentsHandle contents);
+//get the location bar's widget
+GtkWidget* yaedLocationBarWidget(const YaedLocationBarHandle bar);
 
-//destroy the thing
-void yaedTabContentsDestroy(YaedTabContentsHandle contents);
+//destroy the bar
+void yaedLocationBarDestroy(YaedLocationBarHandle bar);
 
 #endif
