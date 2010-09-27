@@ -1,10 +1,17 @@
 CC=gcc
-LFLAGS=-export-dynamic $(shell pkg-config --libs gtk+-2.0 gtksourceview-2.0)
 INC=$(shell pkg-config --cflags gtk+-2.0 gtksourceview-2.0)
-CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
+ifdef OSX
+	LFLAGS=-arch i386 $(shell pkg-config --libs gtk+-2.0 gtksourceview-2.0)
+	CFLAGS=-arch i386 -std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
+else
+	LFLAGS=-export-dynamic $(shell pkg-config --libs gtk+-2.0 gtksourceview-2.0)
+	CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
+endif
 
 yaed: main.o spider.o source-model.o source-view.o tab-label.o tab-contents.o location-bar.o
 	$(CC) -o $@ $^ $(LFLAGS)
+mac:
+	make "OSX=1" yaed
 %.o: %.c
 	$(CC) -c $< $(CFLAGS)
 main.c: spider.h
