@@ -11,7 +11,7 @@ endif
 yaed: main.o spider.o source-model.o source-view.o tab-label.o tab-contents.o location-bar.o
 	$(CC) -o $@ $^ $(LFLAGS)
 mac:
-	make "OSX=1" yaed
+	echo "make OSX=yes yaed; exit;"|~/.local/bin/jhbuild shell
 %.o: %.c
 	$(CC) -c $< $(CFLAGS)
 main.c: spider.h
