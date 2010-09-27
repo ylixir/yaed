@@ -34,7 +34,7 @@ typedef struct YaedSourceModel *YaedSourceModelHandle;
 YaedSourceModelHandle yaedSourceModelNew(const GString* location);
 
 //get the location string, or the buffer object for the model
-GString* yaedSourceModelLocation(const YaedSourceModelHandle model);
-GtkSourceBuffer* yaedSourceModelBuffer(const YaedSourceModelHandle model);
+GString* yaedSourceModelGetLocation(const YaedSourceModelHandle model);
+GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model);
 
 #endif

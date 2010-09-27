@@ -40,7 +40,7 @@ YaedLocationBarHandle yaedLocationBarNew(const YaedSourceModelHandle model)
   //get the location from the model
   GString* location = NULL;
   if(NULL != model)
-    location = yaedSourceModelLocation(model);
+    location = yaedSourceModelGetLocation(model);
 
   //if we could get a location from the model then make the bar
   if(NULL != location)

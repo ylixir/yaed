@@ -59,14 +59,14 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
 }
 
 //get the location string for the model
-GString* yaedSourceModelLocation(const YaedSourceModelHandle model)
+GString* yaedSourceModelGetLocation(const YaedSourceModelHandle model)
 {
   //if we got a bogus model, return null, otherwise pass out the location
   return NULL == model ? NULL : model->location;
 }
 
 //get the buffer object string for the model
-GtkSourceBuffer* yaedSourceModelBuffer(const YaedSourceModelHandle model)
+GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model)
 {
   //if we got a bogus model, return null, otherwise pass out the location
   return NULL == model ? NULL : model->buffer;

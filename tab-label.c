@@ -62,7 +62,7 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
 
   //get the location if we can
   if(NULL != model)
-    location = yaedSourceModelLocation(model);
+    location = yaedSourceModelGetLocation(model);
 
   //sanity checking...
   if(NULL != location && NULL != view)

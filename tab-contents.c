@@ -46,7 +46,7 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
   GtkSourceBuffer* buffer = NULL;
 
   if(NULL != view && NULL != model)
-    buffer = yaedSourceModelBuffer(model);
+    buffer = yaedSourceModelGetBuffer(model);
 
   if(NULL != buffer)
   {
