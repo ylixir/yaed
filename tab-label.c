@@ -79,7 +79,8 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
     //create the label
     label = g_slice_new(struct YaedTabLabel);
     label->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
-    label->text = (GtkLabel*)gtk_label_new(file_name);
+    label->text = location->len ? (GtkLabel*)gtk_label_new(file_name)
+                                : (GtkLabel*)gtk_label_new("[New]");
 
     //cleanup before we forget
     g_free(file_name);
