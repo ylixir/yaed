@@ -20,6 +20,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #define YAED_TAB_LABEL_H
 
 #include <gtk/gtk.h>
+#include <stdbool.h>
 
 #include "source-model.h"
 #include "source-view.h"
@@ -38,6 +39,9 @@ typedef struct YaedTabLabel* YaedTabLabelHandle;
 //make a new label for the view from the model
 YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
                                     const YaedSourceViewHandle view);
+
+//update the label to reflect the model
+bool yaedTabLabelModelUpdate(YaedTabLabelHandle label, const YaedSourceModelHandle model);
 
 //get the GtkWidget for the label
 GtkWidget* yaedTabLabelWidget(const YaedTabLabelHandle label);

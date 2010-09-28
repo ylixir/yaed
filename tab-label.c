@@ -72,18 +72,14 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
     GtkEventBox* image_box;
     //the close image
     GtkImage* image;
-    //the file name minus all the path info
-    gchar* file_name;
-    file_name = g_path_get_basename(location->str);
 
     //create the label
     label = g_slice_new(struct YaedTabLabel);
     label->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
-    label->text = location->len ? (GtkLabel*)gtk_label_new(file_name)
-                                : (GtkLabel*)gtk_label_new("[New]");
 
-    //cleanup before we forget
-    g_free(file_name);
+    //create the label
+    label->text = (GtkLabel*)gtk_label_new(NULL);
+    yaedTabLabelModelUpdate(label, model);
 
     //nothing more to do for the text component of the label
     gtk_widget_show((GtkWidget*)label->text);
@@ -109,6 +105,25 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
   }
 
   return label;
+}
+
+//update the label to reflect the model
+bool yaedTabLabelModelUpdate( YaedTabLabelHandle label,
+                              const YaedSourceModelHandle model)
+{
+  //get the base name
+  gchar* file_name;
+  file_name = g_path_get_basename(yaedSourceModelGetLocation(model)->str);
+
+  //put the text in the label
+  if('\0' != file_name[0]) //file_name isn't empty
+    gtk_label_set_text(label->text, file_name);
+  else //file_name is empty
+    gtk_label_set_text(label->text, "[New]");
+
+  //clean up and bail
+  g_free(file_name);
+  return true;
 }
 
 //get the GtkWidget for the label
