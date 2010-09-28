@@ -71,3 +71,34 @@ GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model)
   //if we got a bogus model, return null, otherwise pass out the location
   return NULL == model ? NULL : model->buffer;
 }
+
+//update the contents of the model
+bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model,
+                                      const GString* content)
+{
+  gtk_text_buffer_set_text( (GtkTextBuffer*)model->buffer,
+                            content->str,
+                            content->len);
+  return true;
+}
+
+//update the location the model references
+bool yaedSourceModelSetLocation(YaedSourceModelHandle model,
+                                const GString* location)
+{
+  g_string_assign(model->location, location->str);
+  return true;
+}
+
+//destroy the model
+void yaedSourceModelDestroy(YaedSourceModelHandle model)
+{
+  //release the gtk objects
+  g_string_free(model->location, TRUE);
+  gtk_object_destroy((GtkObject*)model->buffer);
+  //free the actual model structure
+  g_slice_free(struct YaedSourceModel, model);
+
+  return;
+}
+

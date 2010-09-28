@@ -22,6 +22,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
+#include <stdbool.h>
 
 //the public type that provides instances of this module
 typedef struct YaedSourceModel *YaedSourceModelHandle;
@@ -37,4 +38,10 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location);
 GString* yaedSourceModelGetLocation(const YaedSourceModelHandle model);
 GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model);
 
+//update the contents of the model
+bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model, const GString* content);
+//update the location the model references
+bool yaedSourceModelSetLocation(YaedSourceModelHandle model, const GString* location);
+//destroy the model
+void yaedSourceModelDestroy(YaedSourceModelHandle model);
 #endif
