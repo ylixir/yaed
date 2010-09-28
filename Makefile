@@ -20,13 +20,13 @@ source-model.c: source-model.h
 source-view.c: source-view.h tab-label.h tab-contents.h
 tab-label.c: tab-label.h spider.h
 tab-contents.c: tab-contents.h location-bar.h
-location-bar.c: location-bar.h
+location-bar.c: location-bar.h spider.h
 spider.h: source-view.h
 source-view.h: source-model.h
 source-model.h:
 tab-label.h: source-view.h source-model.h
 tab-contents.h: source-view.h source-model.h
-location-bar.h: source-model.h
+location-bar.h: source-model.h source-view.h
 clean:
 	rm -f yaed
 	rm -f *.o

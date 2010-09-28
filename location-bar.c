@@ -17,6 +17,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 *******************************************************************************/
 
 #include "location-bar.h"
+#include "spider.h"
 
 /*
  * private types
@@ -28,11 +29,34 @@ struct YaedLocationBar
 };
 
 /*
+ * private functions
+ */
+
+//signal that handles user pressing an icon in the location bar
+void yaedLocationBarIconPress(GtkEntry* entry,
+                              GtkEntryIconPosition* position,
+                              GdkEvent* event,
+                              YaedSourceViewHandle view)
+{
+  GString* location;
+  //dummy code
+  event = event;
+  position = position;
+  //get the location string from the location bar
+  location = g_string_new_len(gtk_entry_get_text(entry),
+                              gtk_entry_get_text_length(entry));
+  //ask spider to load it all up
+  yaedSpiderLoadLocation(view, location);
+  //done
+  return;
+}
+
+/*
  * public functions
  */
 
 //create a new location bar
-YaedLocationBarHandle yaedLocationBarNew(const YaedSourceModelHandle model)
+YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const YaedSourceModelHandle model)
 {
   //the return value
   YaedLocationBarHandle bar = NULL;
@@ -51,12 +75,25 @@ YaedLocationBarHandle yaedLocationBarNew(const YaedSourceModelHandle model)
 
     //set it up and show it
     gtk_entry_set_text(bar->entry, location->str);
+    gtk_entry_set_icon_from_stock(bar->entry,
+                                  GTK_ENTRY_ICON_SECONDARY,
+                                  GTK_STOCK_OPEN);
+    g_signal_connect( bar->entry,
+                      "icon-press",
+                      (GCallback)yaedLocationBarIconPress,
+                      view);
     gtk_widget_show((GtkWidget*)bar->entry);
   }
 
   return bar;
 }
 
+//update the location bar from the given model
+bool yaedLocationBarModelUpdate(YaedLocationBarHandle bar, const YaedSourceModelHandle model)
+{
+  gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
+  return true;
+}
 //get the location bar's widget
 GtkWidget* yaedLocationBarWidget(const YaedLocationBarHandle bar)
 {

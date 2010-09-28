@@ -31,4 +31,7 @@ bool yaedSpiderInit();
 //called by any component that wishes a view to close
 bool yaedSpiderRequestViewClose(YaedSourceViewHandle view);
 
+//called when the user requests a location be (re)loaded
+bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location);
+
 #endif

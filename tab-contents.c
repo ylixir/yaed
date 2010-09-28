@@ -57,7 +57,7 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
     //allocate and fill out the contents
     contents = g_slice_new(struct YaedTabContents);
     contents->box = (GtkVBox*)gtk_vbox_new(FALSE, 0);
-    contents->location_bar = yaedLocationBarNew(model);
+    contents->location_bar = yaedLocationBarNew(view, model);
     contents->text = (GtkSourceView*)gtk_source_view_new_with_buffer(buffer);
 
     //pack it all up

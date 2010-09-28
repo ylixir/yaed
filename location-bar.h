@@ -20,8 +20,10 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #define YAED_LOCATION_BAR_H
 
 #include <gtk/gtk.h>
+#include <stdbool.h>
 
 #include "source-model.h"
+#include "source-view.h"
 
 /*
  * public types
@@ -35,7 +37,10 @@ typedef struct YaedLocationBar* YaedLocationBarHandle;
  */
 
 //create a new location bar
-YaedLocationBarHandle yaedLocationBarNew(const YaedSourceModelHandle model);
+YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const YaedSourceModelHandle model);
+
+//update the location bar from the given model
+bool yaedLocationBarModelUpdate(YaedLocationBarHandle bar, const YaedSourceModelHandle model);
 
 //get the location bar's widget
 GtkWidget* yaedLocationBarWidget(const YaedLocationBarHandle bar);
