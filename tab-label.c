@@ -116,7 +116,7 @@ bool yaedTabLabelModelUpdate( YaedTabLabelHandle label,
   file_name = g_path_get_basename(yaedSourceModelGetLocation(model)->str);
 
   //put the text in the label
-  if('\0' != file_name[0]) //file_name isn't empty
+  if(0 != yaedSourceModelGetLocation(model)->len) //file_name isn't empty
     gtk_label_set_text(label->text, file_name);
   else //file_name is empty
     gtk_label_set_text(label->text, "[New]");

@@ -38,6 +38,7 @@ struct YaedViewList
   YaedSourceViewHandle view;
   YaedSourceModelHandle model;
   GtkWindow* window;
+  struct YaedViewList* next;
 } *views;
 
 /*
@@ -90,4 +91,78 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view)
   YaedSourceViewHandle foo = view;
   foo = NULL;
   return false;
+}
+
+//called when the user requests a location be (re)loaded
+bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
+{
+  struct YaedViewList* view_link = NULL;
+  struct YaedViewList* old_model_link = NULL;
+  struct YaedViewList* new_model_link = NULL;
+  struct YaedViewList* iterator = NULL;
+  GString contents;
+  bool success = false;
+
+  //find our view link and if we can, find a link referencing the new location in a model but not our view
+  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  {
+    if(iterator->view == view)
+      view_link = iterator;
+    else if(   0 != location->len &&
+            TRUE == g_string_equal( location,
+                                    yaedSourceModelGetLocation(iterator->model))
+            )
+      new_model_link = iterator;
+  }
+  //find another view that points to the model pointed to by our view
+  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  {
+    if(iterator->view != view && iterator->model == view_link->model)
+    {
+      old_model_link = iterator;
+      //we could break out here, but i wanna let it run
+      //if this loop COULD feel slow, i want it to DEFINITELY
+      //feel slow, so i'll know to revisit it, and streamline
+      //data structures or whatever
+    }
+  }
+
+  //simplest first, reload the content if the location hasn't changed
+  if(TRUE == g_string_equal(location,
+                            yaedSourceModelGetLocation(view_link->model)))
+  {
+    if( TRUE ==
+        g_file_get_contents(location->str, &contents.str, &contents.len, NULL))
+    {
+      contents.allocated_len = contents.len;
+      yaedSourceModelSetBufferContents(view_link->model, &contents);
+      g_free(contents.str);
+      success = true;
+    }
+  }
+  //if the file is already open in another tab, just tie the model to this view
+  else if(NULL != new_model_link)
+  {
+    yaedSourceViewSetModel(view, new_model_link->model);
+    if(NULL == old_model_link)
+      yaedSourceModelDestroy(view_link->model);
+    view_link->model = new_model_link->model;
+    success = true;
+  }
+  //only attempt to load the new file if the location isn't empty
+  else if(0 != location->len)
+  {
+    if( TRUE ==
+        g_file_get_contents(location->str, &contents.str, &contents.len, NULL))
+    {
+      contents.allocated_len = contents.len;
+      yaedSourceModelSetBufferContents(view_link->model, &contents);
+      yaedSourceModelSetLocation(view_link->model, location);
+      yaedSourceViewSetModel(view, view_link->model);
+      g_free(contents.str);
+      success = true;
+    }
+  }
+
+  return success;
 }
