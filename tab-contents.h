@@ -20,6 +20,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #define YAED_TAB_CONTENTS_H
 
 #include <gtk/gtk.h>
+#include <stdbool.h>
 
 #include "source-model.h"
 #include "source-view.h"
@@ -38,6 +39,9 @@ typedef struct YaedTabContents* YaedTabContentsHandle;
 //make a new content pane for a tab
 YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
                                           const YaedSourceViewHandle view);
+
+//update the contents with the given model
+bool yaedTabContentsModelUpdate(YaedTabContentsHandle contents, const YaedSourceModelHandle model);
 
 //get the gtk widget
 GtkWidget* yaedTabContentsWidget(const YaedTabContentsHandle contents);

@@ -76,6 +76,17 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
   return contents;
 }
 
+//update the contents with the given model
+bool yaedTabContentsModelUpdate(YaedTabContentsHandle contents,
+                                const YaedSourceModelHandle model)
+{
+  //set the buffer, and hand off to the location bar to do it's thing
+  gtk_text_view_set_buffer( (GtkTextView*)contents->text,
+                            (GtkTextBuffer*)yaedSourceModelGetBuffer(model));
+  yaedLocationBarModelUpdate(contents->location_bar, model);
+  return true;
+}
+
 //get the gtk widget
 GtkWidget* yaedTabContentsWidget(const YaedTabContentsHandle contents)
 {
