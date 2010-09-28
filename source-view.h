@@ -20,6 +20,8 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #ifndef YAED_SOURCE_VIEW_H
 #define YAED_SOURCE_VIEW_H
 
+#include <stdbool.h>
+
 #include "source-model.h"
 
 //the public type that provides instances of this module
@@ -34,5 +36,7 @@ YaedSourceViewHandle yaedSourceViewNew(const YaedSourceModelHandle model);
 GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view);
 GtkWidget* yaedSourceViewContentsWidget(const YaedSourceViewHandle view);
 
+//associate the view with a new model
+bool yaedSourceViewSetModel(YaedSourceViewHandle view, const YaedSourceModelHandle model);
 
 #endif
