@@ -143,7 +143,7 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
   //if the file is already open in another tab, just tie the model to this view
   else if(NULL != new_model_link)
   {
-    yaedSourceViewSetModel(view, new_model_link->model);
+    yaedSourceViewModelUpdate(view, new_model_link->model);
     if(NULL == old_model_link)
       yaedSourceModelDestroy(view_link->model);
     view_link->model = new_model_link->model;
@@ -158,11 +158,105 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
       contents.allocated_len = contents.len;
       yaedSourceModelSetBufferContents(view_link->model, &contents);
       yaedSourceModelSetLocation(view_link->model, location);
-      yaedSourceViewSetModel(view, view_link->model);
+      yaedSourceViewModelUpdate(view, view_link->model);
       g_free(contents.str);
       success = true;
     }
   }
 
   return success;
+}
+
+//called when the user requests a location be stored
+bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
+{
+  //link that has a model with the old location
+  struct YaedViewList* old_link = NULL;
+  //link that has a model with the new location
+  struct YaedViewList* new_link = NULL;
+  //link that has our view
+  struct YaedViewList* view_link = NULL;
+  //used to iterate over views
+  struct YaedViewList* iterator = NULL;
+  //holds the contents of the model we are saving
+  gchar* contents = NULL;
+  GtkTextIter start;
+  GtkTextIter end;
+
+
+  //find our view_link, and our new_link
+  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  {
+    //did we find our view_link?
+    if(iterator->view == view)
+      view_link = iterator;
+    //did we find our new_link?
+    else if(TRUE == g_string_equal( location,
+                                    yaedSourceModelGetLocation(iterator->model))
+           )
+      new_link = iterator;
+
+  }
+  //find our old_link
+  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  {
+    if(iterator->view != view && iterator->model == view_link->model)
+      old_link = iterator;
+  }
+
+  //get the contents of the buffer
+  gtk_text_buffer_get_bounds(
+                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
+                &start,
+                &end);
+  contents = gtk_text_buffer_get_text(
+                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
+                &start,
+                &end,
+                TRUE);
+  //if the location didn't change, skip the fancy stuff ahead
+  if(TRUE == g_string_equal(location,
+                            yaedSourceModelGetLocation(view_link->model)))
+    old_link = new_link = NULL;
+  //likewise, skip fancy stuff if we don't even have a location
+  if(0 == location->len)
+    old_link = new_link = NULL;
+
+  //this means that the file we are overwriting is being edited in another tab
+  if(NULL != new_link)
+  {
+    //copy the contents to the open model for the file
+    gtk_text_buffer_set_text(
+                (GtkTextBuffer*)yaedSourceModelGetBuffer(new_link->model),
+                contents, -1);
+    //display the changes
+    yaedSourceViewModelUpdate(view_link->view, new_link->model);
+
+    //free the old model
+    yaedSourceModelDestroy(view_link->model);
+    //and tie in the new model to the view
+    view_link->model = new_link->model;
+  }
+  //if we are writing to a new location and the old one is open somewhere
+  else if(NULL != old_link)
+  {
+    //make a new model, and copy everything over
+    view_link->model = yaedSourceModelNew(location);
+    gtk_text_buffer_set_text(
+                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
+                contents, -1);
+    yaedSourceViewModelUpdate(view_link->view, view_link->model);
+  }
+  else if(0 != location->len)
+  {
+    //we have changed the file name, so update the view, and the model
+    yaedSourceModelSetLocation(view_link->model, location);
+    yaedSourceViewModelUpdate(view_link->view, view_link->model);
+  }
+  
+  //write it out, and clean up
+  g_file_set_contents(location->str, contents, -1, NULL);
+  g_free(contents);
+
+  return true;
 }

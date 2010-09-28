@@ -93,7 +93,7 @@ GtkWidget* yaedSourceViewContentsWidget(const YaedSourceViewHandle view)
 }
 
 //associate the view with a new model
-bool yaedSourceViewSetModel(YaedSourceViewHandle view,
+bool yaedSourceViewModelUpdate(YaedSourceViewHandle view,
                             const YaedSourceModelHandle model)
 {
   yaedTabLabelModelUpdate(view->label, model);

@@ -37,6 +37,6 @@ GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view);
 GtkWidget* yaedSourceViewContentsWidget(const YaedSourceViewHandle view);
 
 //associate the view with a new model
-bool yaedSourceViewSetModel(YaedSourceViewHandle view, const YaedSourceModelHandle model);
+bool yaedSourceViewModelUpdate(YaedSourceViewHandle view, const YaedSourceModelHandle model);
 
 #endif

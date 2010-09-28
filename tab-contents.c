@@ -80,10 +80,20 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
 bool yaedTabContentsModelUpdate(YaedTabContentsHandle contents,
                                 const YaedSourceModelHandle model)
 {
-  //set the buffer, and hand off to the location bar to do it's thing
-  gtk_text_view_set_buffer( (GtkTextView*)contents->text,
-                            (GtkTextBuffer*)yaedSourceModelGetBuffer(model));
+  GtkSourceBuffer* old_buffer;
+  GtkSourceBuffer* new_buffer;
+
+  //get the buffers
+  new_buffer = yaedSourceModelGetBuffer(model);
+  old_buffer = (GtkSourceBuffer*)gtk_text_view_get_buffer((GtkTextView*)contents->text);
+
+  //set the buffer
+  if(old_buffer != new_buffer)
+    gtk_text_view_set_buffer( (GtkTextView*)contents->text,
+                              (GtkTextBuffer*)new_buffer);
+  //hand off to the location bar
   yaedLocationBarModelUpdate(contents->location_bar, model);
+
   return true;
 }
 

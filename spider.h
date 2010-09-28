@@ -33,5 +33,7 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view);
 
 //called when the user requests a location be (re)loaded
 bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location);
+//called when the user requests a location be stored
+bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location);
 
 #endif

@@ -34,7 +34,7 @@ struct YaedLocationBar
 
 //signal that handles user pressing an icon in the location bar
 void yaedLocationBarIconPress(GtkEntry* entry,
-                              GtkEntryIconPosition* position,
+                              GtkEntryIconPosition position,
                               GdkEvent* event,
                               YaedSourceViewHandle view)
 {
@@ -45,8 +45,19 @@ void yaedLocationBarIconPress(GtkEntry* entry,
   //get the location string from the location bar
   location = g_string_new_len(gtk_entry_get_text(entry),
                               gtk_entry_get_text_length(entry));
-  //ask spider to load it all up
-  yaedSpiderLoadLocation(view, location);
+  switch(position)
+  {
+  case GTK_ENTRY_ICON_PRIMARY:
+    //ask spider to store it away
+    yaedSpiderStoreLocation(view, location);
+    break;
+  case GTK_ENTRY_ICON_SECONDARY:
+    //ask spider to load it all up
+    yaedSpiderLoadLocation(view, location);
+    break;
+  default:
+    break;
+  }
   //done
   return;
 }
@@ -75,6 +86,9 @@ YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const 
 
     //set it up and show it
     gtk_entry_set_text(bar->entry, location->str);
+    gtk_entry_set_icon_from_stock(bar->entry,
+                                  GTK_ENTRY_ICON_PRIMARY,
+                                  GTK_STOCK_SAVE);
     gtk_entry_set_icon_from_stock(bar->entry,
                                   GTK_ENTRY_ICON_SECONDARY,
                                   GTK_STOCK_OPEN);
