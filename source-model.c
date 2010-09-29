@@ -17,6 +17,9 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 *******************************************************************************/
 
+#include <gtksourceview/gtksourceview.h>
+#include <gtksourceview/gtksourcelanguagemanager.h>
+
 #include "source-model.h"
 
 /*
@@ -28,6 +31,10 @@ struct YaedSourceModel
   GtkSourceBuffer* buffer;
   GString* location;
 };
+
+/*
+ * private functions
+ */
 
 /*
  * public functions
@@ -43,6 +50,11 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
   {
     model = g_slice_new0(struct YaedSourceModel);
     model->buffer = gtk_source_buffer_new(NULL);
+    gtk_source_buffer_set_highlight_syntax(model->buffer, TRUE);
+    /*g_signal_connect( model->buffer,
+                      "changed",
+                      (GCallback)yaedSourceModelChangedEvent,
+                      model);*/
 
     if(0 == location->len || NULL == location->str)
     {
@@ -50,8 +62,7 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
     }
     else
     {
-      //TODO: this needs implementation
-      model->location = g_string_new("");
+      model->location = g_string_new_len(location->str, location->len);
     }
   }
 
@@ -79,6 +90,7 @@ bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model,
   gtk_text_buffer_set_text( (GtkTextBuffer*)model->buffer,
                             content->str,
                             content->len);
+
   return true;
 }
 
@@ -87,6 +99,46 @@ bool yaedSourceModelSetLocation(YaedSourceModelHandle model,
                                 const GString* location)
 {
   g_string_assign(model->location, location->str);
+  return true;
+}
+
+//update the syntax highlighting scheme
+bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
+                                        const GString* sample)
+{
+  GtkSourceLanguage* language;
+  GtkSourceLanguageManager* manager;
+  gboolean result;
+  gchar* contentType;
+  gchar* fileName;
+  
+  //do we have a valid file name?
+  fileName = 0 != model->location->len ? model->location->str : NULL;
+  //create the manager
+  manager = gtk_source_language_manager_get_default();
+  
+  //try to get the content type
+  contentType = g_content_type_guess( fileName,
+                                      (guchar*)sample->str,
+                                      sample->len,
+                                      &result);
+  if(FALSE == result)
+  {
+    g_free(contentType);
+    contentType = NULL;
+  }
+  if(NULL != contentType || NULL != fileName)
+  {
+    language = gtk_source_language_manager_guess_language(manager,
+                                                          fileName,
+                                                          contentType);
+    gtk_source_buffer_set_language(model->buffer, language);
+  }
+  
+  //clean up
+  if(NULL != contentType)
+    g_free(contentType);
+  
   return true;
 }
 

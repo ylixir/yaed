@@ -42,6 +42,8 @@ GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model);
 bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model, const GString* content);
 //update the location the model references
 bool yaedSourceModelSetLocation(YaedSourceModelHandle model, const GString* location);
+//update the syntax highlighting scheme
+bool yaedSourceModelUpdateHighlighting(YaedSourceModelHandle model, const GString* sample);
 //destroy the model
 void yaedSourceModelDestroy(YaedSourceModelHandle model);
 #endif

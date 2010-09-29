@@ -103,7 +103,8 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
   GString contents;
   bool success = false;
 
-  //find our view link and if we can, find a link referencing the new location in a model but not our view
+  //find our view link and if we can, find a link referencing the
+  //new location in a model but not our view
   for(iterator = views; NULL != iterator; iterator = iterator->next)
   {
     if(iterator->view == view)
@@ -156,8 +157,9 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
         g_file_get_contents(location->str, &contents.str, &contents.len, NULL))
     {
       contents.allocated_len = contents.len;
-      yaedSourceModelSetBufferContents(view_link->model, &contents);
       yaedSourceModelSetLocation(view_link->model, location);
+      yaedSourceModelSetBufferContents(view_link->model, &contents);
+      yaedSourceModelUpdateHighlighting(view_link->model, &contents);
       yaedSourceViewModelUpdate(view, view_link->model);
       g_free(contents.str);
       success = true;
@@ -180,6 +182,7 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   struct YaedViewList* iterator = NULL;
   //holds the contents of the model we are saving
   gchar* contents = NULL;
+  GString* stringContents;
   GtkTextIter start;
   GtkTextIter end;
 
@@ -255,7 +258,11 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   }
   
   //write it out, and clean up
-  g_file_set_contents(location->str, contents, -1, NULL);
+  stringContents = g_string_new(contents);
+  g_file_set_contents(location->str, stringContents->str,
+                      stringContents->len, NULL);
+  yaedSourceModelUpdateHighlighting(view_link->model, stringContents);
+  g_string_free(stringContents, TRUE);
   g_free(contents);
 
   return true;
