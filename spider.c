@@ -45,6 +45,22 @@ struct YaedViewListElement
  * private functions
  */
 
+//create the "new" tab
+void yaedSpiderMakeNewTab(GtkNotebook* tabStrip)
+{
+  GtkImage* child;
+  GtkImage* label;
+  
+  //allocate
+  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
+  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
+  //show them
+  gtk_widget_show((GtkWidget*)child);
+  gtk_widget_show((GtkWidget*)label);
+  //add it
+  gtk_notebook_append_page(tabStrip, (GtkWidget*)child, (GtkWidget*)label);
+}
+
 //create an empty view
 struct YaedViewListElement* yaedSpiderCreateEmptyView()
 {
@@ -84,11 +100,12 @@ void yaedSpiderTabSwitched( GtkNotebook* tabStrip,
     newViewElement->next = viewList;
     viewList = newViewElement;
 
-    gtk_notebook_insert_page( tabStrip,
+    gtk_notebook_append_page( tabStrip,
                               yaedSourceViewContentsWidget(newViewElement->view),
-                              yaedSourceViewLabelWidget(newViewElement->view),
-                              pageNum);
-    gtk_notebook_set_current_page(tabStrip, 0);
+                              yaedSourceViewLabelWidget(newViewElement->view));
+
+    yaedSpiderMakeNewTab(tabStrip);
+    gtk_notebook_remove_page(tabStrip, pageNum);
   }
 }
 /*
@@ -98,10 +115,6 @@ void yaedSpiderTabSwitched( GtkNotebook* tabStrip,
 //set up initial window(s) tab(s) etc.
 bool yaedSpiderInit()
 {
-  //the "new" tab contents
-  GtkImage* label;
-  GtkImage* child;
-  
   //the new0 thingie zeros out the values of our structs for us
   //so we don't have to initialize anything.  yay.
   windowList = g_slice_new0(struct YaedWindowListElement);
@@ -113,15 +126,6 @@ bool yaedSpiderInit()
   windowList->tabStrip = (GtkNotebook*)gtk_notebook_new();
   gtk_container_add((GtkContainer*)windowList->window,
                     (GtkWidget*)windowList->tabStrip);
-  //create the "new" tab
-  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
-  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
-  gtk_notebook_append_page( windowList->tabStrip,
-                            (GtkWidget*)child,
-                            (GtkWidget*)label);
-  gtk_widget_show((GtkWidget*)label);
-  gtk_widget_show((GtkWidget*)child);
-
   
   //show the strip
   gtk_widget_show((GtkWidget*)windowList->tabStrip);
@@ -135,6 +139,9 @@ bool yaedSpiderInit()
                             yaedSourceViewContentsWidget(viewList->view),
                             yaedSourceViewLabelWidget(viewList->view) );
 
+  //create the "new" tab
+  yaedSpiderMakeNewTab(windowList->tabStrip);
+  
   //wire up events
   g_signal_connect( windowList->tabStrip,"switch-page",
                     (GCallback)yaedSpiderTabSwitched,windowList);
