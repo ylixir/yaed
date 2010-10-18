@@ -52,8 +52,8 @@ void yaedSpiderMakeNewTab(GtkNotebook* tabStrip)
   GtkImage* label;
   
   //allocate
-  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
-  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
+  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW,GTK_ICON_SIZE_MENU);
+  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW,GTK_ICON_SIZE_MENU);
   //show them
   gtk_widget_show((GtkWidget*)child);
   gtk_widget_show((GtkWidget*)label);
@@ -100,9 +100,9 @@ void yaedSpiderTabSwitched( GtkNotebook* tabStrip,
     newViewElement->next = viewList;
     viewList = newViewElement;
 
-    gtk_notebook_append_page( tabStrip,
-                              yaedSourceViewContentsWidget(newViewElement->view),
-                              yaedSourceViewLabelWidget(newViewElement->view));
+    gtk_notebook_append_page(tabStrip,
+                             yaedSourceViewContentsWidget(newViewElement->view),
+                             yaedSourceViewLabelWidget(newViewElement->view));
 
     yaedSpiderMakeNewTab(tabStrip);
     gtk_notebook_remove_page(tabStrip, pageNum);
@@ -272,7 +272,10 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   viewElement->model = newModel;
   if(0 == yaedSourceModelDecrementReferenceCount(oldModel))
     yaedSourceModelDestroy(oldModel);
-  g_file_set_contents(location->str, stringContents->str, stringContents->len, NULL);
+  g_file_set_contents(location->str,
+                      stringContents->str,
+                      stringContents->len,
+                      NULL);
   yaedSourceViewModelUpdate(view, newModel);
   yaedSourceModelUpdateHighlighting(newModel, stringContents);
   g_string_free(stringContents, TRUE);
