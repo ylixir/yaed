@@ -37,10 +37,60 @@ struct YaedViewListElement
 {
   YaedSourceViewHandle view;
   YaedSourceModelHandle model;
-  GtkWindow* window;
+  struct YaedWindowListElement* windowElement;
   struct YaedViewListElement* next;
 } *viewList;
 
+/*
+ * private functions
+ */
+
+//create an empty view
+struct YaedViewListElement* yaedSpiderCreateEmptyView()
+{
+  GString* tmpString;
+  struct YaedViewListElement* newElement;
+  
+  //allocate
+  newElement = g_slice_new0(struct YaedViewListElement);
+  tmpString = g_string_new(NULL);
+  
+  //create the model
+  newElement->model = yaedSourceModelNew(tmpString);
+  yaedSourceModelIncrementReferenceCount(newElement->model);
+  //create the view
+  newElement->view = yaedSourceViewNew(newElement->model);
+
+  //free
+  g_string_free(tmpString, TRUE);
+  
+  return newElement;
+}
+
+//event handler for "new" tab clicks
+void yaedSpiderTabSwitched( GtkNotebook* tabStrip,
+                            void* page,
+                            gint pageNum,
+                            struct YaedWindowListElement* windowElement)
+{
+  //screw you warnings
+  page = NULL;
+  
+  if(gtk_notebook_get_n_pages(tabStrip) == pageNum+1)
+  {
+    struct YaedViewListElement* newViewElement;
+    newViewElement = yaedSpiderCreateEmptyView();
+    newViewElement->windowElement = windowElement;
+    newViewElement->next = viewList;
+    viewList = newViewElement;
+
+    gtk_notebook_insert_page( tabStrip,
+                              yaedSourceViewContentsWidget(newViewElement->view),
+                              yaedSourceViewLabelWidget(newViewElement->view),
+                              pageNum);
+    gtk_notebook_set_current_page(tabStrip, 0);
+  }
+}
 /*
  * public functions
  */
@@ -48,36 +98,46 @@ struct YaedViewListElement
 //set up initial window(s) tab(s) etc.
 bool yaedSpiderInit()
 {
-  GString* tmpString; //a string we will use to initialize our empty model
-
+  //the "new" tab contents
+  GtkImage* label;
+  GtkImage* child;
+  
   //the new0 thingie zeros out the values of our structs for us
   //so we don't have to initialize anything.  yay.
   windowList = g_slice_new0(struct YaedWindowListElement);
-  viewList = g_slice_new0(struct YaedViewListElement);
 
   //create the main window
   windowList->window = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  viewList->window = windowList->window;
 
   //create the tab strip
   windowList->tabStrip = (GtkNotebook*)gtk_notebook_new();
   gtk_container_add((GtkContainer*)windowList->window,
                     (GtkWidget*)windowList->tabStrip);
+  //create the "new" tab
+  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
+  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU);
+  gtk_notebook_append_page( windowList->tabStrip,
+                            (GtkWidget*)child,
+                            (GtkWidget*)label);
+  gtk_widget_show((GtkWidget*)label);
+  gtk_widget_show((GtkWidget*)child);
+
+  
+  //show the strip
   gtk_widget_show((GtkWidget*)windowList->tabStrip);
 
-  //create a blank model
-  tmpString = g_string_new(NULL);
-  viewList->model = yaedSourceModelNew(tmpString);
-  yaedSourceModelIncrementReferenceCount(viewList->model);
-  g_string_free(tmpString, TRUE);
-
-  //create the empty view
-  viewList->view = yaedSourceViewNew(viewList->model);
+  //create an initial tab
+  viewList = yaedSpiderCreateEmptyView();
+  viewList->windowElement = windowList;
 
   //and attach the empty view to our new window
-  gtk_notebook_append_page( windowList->tabStrip,
+  gtk_notebook_prepend_page( windowList->tabStrip,
                             yaedSourceViewContentsWidget(viewList->view),
                             yaedSourceViewLabelWidget(viewList->view) );
+
+  //wire up events
+  g_signal_connect( windowList->tabStrip,"switch-page",
+                    (GCallback)yaedSpiderTabSwitched,windowList);
 
   //show the window and we are done
   gtk_widget_show((GtkWidget*)windowList->window);
