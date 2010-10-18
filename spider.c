@@ -24,22 +24,22 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
  */
 
 //a list of all the windows that belong to the application
-struct YaedWindowList
+struct YaedWindowListElement
 {
   GtkWindow* window;
   GtkNotebook* tabStrip;
-  struct YaedWindowList* next;
-} *windows;
+  struct YaedWindowListElement* next;
+} *windowList;
 
 //a list that links the source-models to the windows and source-views
 //that they are tied to
-struct YaedViewList
+struct YaedViewListElement
 {
   YaedSourceViewHandle view;
   YaedSourceModelHandle model;
   GtkWindow* window;
-  struct YaedViewList* next;
-} *views;
+  struct YaedViewListElement* next;
+} *viewList;
 
 /*
  * public functions
@@ -52,34 +52,35 @@ bool yaedSpiderInit()
 
   //the new0 thingie zeros out the values of our structs for us
   //so we don't have to initialize anything.  yay.
-  windows = g_slice_new0(struct YaedWindowList);
-  views = g_slice_new0(struct YaedViewList);
+  windowList = g_slice_new0(struct YaedWindowListElement);
+  viewList = g_slice_new0(struct YaedViewListElement);
 
   //create the main window
-  windows->window = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  views->window = windows->window;
+  windowList->window = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  viewList->window = windowList->window;
 
   //create the tab strip
-  windows->tabStrip = (GtkNotebook*)gtk_notebook_new();
-  gtk_container_add((GtkContainer*)windows->window,
-                    (GtkWidget*)windows->tabStrip);
-  gtk_widget_show((GtkWidget*)windows->tabStrip);
+  windowList->tabStrip = (GtkNotebook*)gtk_notebook_new();
+  gtk_container_add((GtkContainer*)windowList->window,
+                    (GtkWidget*)windowList->tabStrip);
+  gtk_widget_show((GtkWidget*)windowList->tabStrip);
 
   //create a blank model
   tmpString = g_string_new(NULL);
-  views->model = yaedSourceModelNew(tmpString);
+  viewList->model = yaedSourceModelNew(tmpString);
+  yaedSourceModelIncrementReferenceCount(viewList->model);
   g_string_free(tmpString, TRUE);
 
   //create the empty view
-  views->view = yaedSourceViewNew(views->model);
+  viewList->view = yaedSourceViewNew(viewList->model);
 
   //and attach the empty view to our new window
-  gtk_notebook_append_page( windows->tabStrip,
-                            yaedSourceViewContentsWidget(views->view),
-                            yaedSourceViewLabelWidget(views->view) );
+  gtk_notebook_append_page( windowList->tabStrip,
+                            yaedSourceViewContentsWidget(viewList->view),
+                            yaedSourceViewLabelWidget(viewList->view) );
 
   //show the window and we are done
-  gtk_widget_show((GtkWidget*)windows->window);
+  gtk_widget_show((GtkWidget*)windowList->window);
 
   return true;
 }
@@ -96,75 +97,67 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view)
 //called when the user requests a location be (re)loaded
 bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
 {
-  struct YaedViewList* view_link = NULL;
-  struct YaedViewList* old_model_link = NULL;
-  struct YaedViewList* new_model_link = NULL;
-  struct YaedViewList* iterator = NULL;
+  struct YaedViewListElement* viewElement = NULL;
+  struct YaedViewListElement* iterator = NULL;
+  YaedSourceModelHandle newModel = NULL;
+  YaedSourceModelHandle oldModel = NULL;
+  unsigned int newModelCount, oldModelCount;
   GString contents;
-  bool success = false;
-
-  //find our view link and if we can, find a link referencing the
-  //new location in a model but not our view
-  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  bool success = true;
+  
+  newModelCount = oldModelCount = 0;
+  //find all the basic values we need for the routine
+  for(iterator = viewList; NULL != iterator; iterator = iterator->next)
   {
     if(iterator->view == view)
-      view_link = iterator;
-    else if(   0 != location->len &&
-            TRUE == g_string_equal( location,
-                                    yaedSourceModelGetLocation(iterator->model))
-            )
-      new_model_link = iterator;
+      viewElement = iterator;
+    if(TRUE
+        == g_string_equal(location,yaedSourceModelGetLocation(iterator->model)))
+      newModel = iterator->model;
   }
-  //find another view that points to the model pointed to by our view
-  for(iterator = views; NULL != iterator; iterator = iterator->next)
+  oldModel = viewElement->model;
+  //err, special case, empty locations don't share models
+  if(0 == location->len)
+    newModel = NULL;
+  
+  //make sure we have some kind of new model to work with so the logic works
+  if(NULL == newModel)
+    newModel = yaedSourceModelNew(location);
+  
+  //no matter what we need to increment the new models reference count
+  //this is okay since we will decrement old model later, so the net is
+  //zero if the two models are the same
+  newModelCount = yaedSourceModelIncrementReferenceCount(newModel);
+  
+  //load/reload
+  if(1 == newModelCount || newModel == oldModel)
+  {if(TRUE==g_file_get_contents(location->str,&contents.str,&contents.len,NULL))
   {
-    if(iterator->view != view && iterator->model == view_link->model)
-    {
-      old_model_link = iterator;
-      //we could break out here, but i wanna let it run
-      //if this loop COULD feel slow, i want it to DEFINITELY
-      //feel slow, so i'll know to revisit it, and streamline
-      //data structures or whatever
-    }
+    //yay, we could lod the file, set the contents of the buffer and stuff
+    yaedSourceModelSetBufferContents(newModel, &contents);
+    yaedSourceModelUpdateHighlighting(newModel, &contents);
+    g_free(contents.str);
   }
-
-  //simplest first, reload the content if the location hasn't changed
-  if(TRUE == g_string_equal(location,
-                            yaedSourceModelGetLocation(view_link->model)))
+  else if(newModel != oldModel)
   {
-    if( TRUE ==
-        g_file_get_contents(location->str, &contents.str, &contents.len, NULL))
-    {
-      contents.allocated_len = contents.len;
-      yaedSourceModelSetBufferContents(view_link->model, &contents);
-      g_free(contents.str);
-      success = true;
-    }
-  }
-  //if the file is already open in another tab, just tie the model to this view
-  else if(NULL != new_model_link)
-  {
-    yaedSourceViewModelUpdate(view, new_model_link->model);
-    if(NULL == old_model_link)
-      yaedSourceModelDestroy(view_link->model);
-    view_link->model = new_model_link->model;
-    success = true;
-  }
-  //only attempt to load the new file if the location isn't empty
-  else if(0 != location->len)
-  {
-    if( TRUE ==
-        g_file_get_contents(location->str, &contents.str, &contents.len, NULL))
-    {
-      contents.allocated_len = contents.len;
-      yaedSourceModelSetLocation(view_link->model, location);
-      yaedSourceModelSetBufferContents(view_link->model, &contents);
-      yaedSourceModelUpdateHighlighting(view_link->model, &contents);
-      yaedSourceViewModelUpdate(view, view_link->model);
-      g_free(contents.str);
-      success = true;
-    }
-  }
+    //oh noes, we couldn't load the file! abort!
+    newModelCount = yaedSourceModelDecrementReferenceCount(newModel);
+    oldModelCount = yaedSourceModelIncrementReferenceCount(oldModel);
+    yaedSourceModelDestroy(newModel);
+    newModel=oldModel;
+    success = false;
+  }}
+  
+  //tie in the new and improved model to the views tuple
+  //this some of these operations will essentially be a noop, but the
+  //above logic should keep everything consistent
+  viewElement->model = newModel;
+  yaedSourceViewModelUpdate(view, newModel);
+  oldModelCount = yaedSourceModelDecrementReferenceCount(oldModel);
+  
+  //and if we are done with the old model, toss it
+  if(0 == oldModelCount)
+    yaedSourceModelDestroy(oldModel);
 
   return success;
 }
@@ -172,98 +165,51 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
 //called when the user requests a location be stored
 bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
 {
-  //link that has a model with the old location
-  struct YaedViewList* old_link = NULL;
-  //link that has a model with the new location
-  struct YaedViewList* new_link = NULL;
-  //link that has our view
-  struct YaedViewList* view_link = NULL;
-  //used to iterate over views
-  struct YaedViewList* iterator = NULL;
-  //holds the contents of the model we are saving
+  struct YaedViewListElement* viewElement = NULL;
+  struct YaedViewListElement* iterator = NULL;
+  YaedSourceModelHandle oldModel = NULL;
+  YaedSourceModelHandle newModel = NULL;
   gchar* contents = NULL;
   GString* stringContents;
   GtkTextIter start;
   GtkTextIter end;
-
-
-  //find our view_link, and our new_link
-  for(iterator = views; NULL != iterator; iterator = iterator->next)
-  {
-    //did we find our view_link?
-    if(iterator->view == view)
-      view_link = iterator;
-    //did we find our new_link?
-    else if(TRUE == g_string_equal( location,
-                                    yaedSourceModelGetLocation(iterator->model))
-           )
-      new_link = iterator;
-
-  }
-  //find our old_link
-  for(iterator = views; NULL != iterator; iterator = iterator->next)
-  {
-    if(iterator->view != view && iterator->model == view_link->model)
-      old_link = iterator;
-  }
-
-  //get the contents of the buffer
-  gtk_text_buffer_get_bounds(
-                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
-                &start,
-                &end);
-  contents = gtk_text_buffer_get_text(
-                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
-                &start,
-                &end,
-                TRUE);
-  //if the location didn't change, skip the fancy stuff ahead
-  if(TRUE == g_string_equal(location,
-                            yaedSourceModelGetLocation(view_link->model)))
-    old_link = new_link = NULL;
-  //likewise, skip fancy stuff if we don't even have a location
-  if(0 == location->len)
-    old_link = new_link = NULL;
-
-  //this means that the file we are overwriting is being edited in another tab
-  if(NULL != new_link)
-  {
-    //copy the contents to the open model for the file
-    gtk_text_buffer_set_text(
-                (GtkTextBuffer*)yaedSourceModelGetBuffer(new_link->model),
-                contents, -1);
-    //display the changes
-    yaedSourceViewModelUpdate(view_link->view, new_link->model);
-
-    //free the old model
-    yaedSourceModelDestroy(view_link->model);
-    //and tie in the new model to the view
-    view_link->model = new_link->model;
-  }
-  //if we are writing to a new location and the old one is open somewhere
-  else if(NULL != old_link)
-  {
-    //make a new model, and copy everything over
-    view_link->model = yaedSourceModelNew(location);
-    gtk_text_buffer_set_text(
-                (GtkTextBuffer*)yaedSourceModelGetBuffer(view_link->model),
-                contents, -1);
-    yaedSourceViewModelUpdate(view_link->view, view_link->model);
-  }
-  else if(0 != location->len)
-  {
-    //we have changed the file name, so update the view, and the model
-    yaedSourceModelSetLocation(view_link->model, location);
-    yaedSourceViewModelUpdate(view_link->view, view_link->model);
-  }
+  GtkSourceBuffer* buffer;
   
-  //write it out, and clean up
+  //find the stuff, man
+  for(iterator = viewList; NULL != iterator; iterator = iterator->next)
+  {
+    if(iterator->view == view)
+      viewElement = iterator;
+    if(TRUE
+        == g_string_equal(location,yaedSourceModelGetLocation(iterator->model)))
+      newModel = iterator->model;
+  }
+  oldModel = viewElement->model;
+  //err, special case, empty locations don't share models
+  if(0 == location->len)
+    newModel = oldModel;
+  if(NULL == newModel) //oh noes, we don't have a new model!
+    newModel = yaedSourceModelNew(location);
+  //get the contents of the buffer
+  buffer = yaedSourceModelGetBuffer(oldModel);
+  gtk_text_buffer_get_bounds((GtkTextBuffer*)buffer, &start, &end);
+  contents=gtk_text_buffer_get_text((GtkTextBuffer*)buffer,&start,&end,TRUE);
   stringContents = g_string_new(contents);
-  g_file_set_contents(location->str, stringContents->str,
-                      stringContents->len, NULL);
-  yaedSourceModelUpdateHighlighting(view_link->model, stringContents);
-  g_string_free(stringContents, TRUE);
   g_free(contents);
-
+  //copy the contents over
+  if(newModel != oldModel)
+    yaedSourceModelSetBufferContents(newModel, stringContents);
+  
+  //tie it all together and clean up
+  yaedSourceModelIncrementReferenceCount(newModel);
+  viewElement->model = newModel;
+  if(0 == yaedSourceModelDecrementReferenceCount(oldModel))
+    yaedSourceModelDestroy(oldModel);
+  g_file_set_contents(location->str, stringContents->str, stringContents->len, NULL);
+  yaedSourceViewModelUpdate(view, newModel);
+  yaedSourceModelUpdateHighlighting(newModel, stringContents);
+  g_string_free(stringContents, TRUE);
+  
   return true;
 }
+

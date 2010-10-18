@@ -51,6 +51,7 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
   {
     model = g_slice_new0(struct YaedSourceModel);
     model->buffer = gtk_source_buffer_new(NULL);
+    g_object_ref(model->buffer);
     gtk_source_buffer_set_highlight_syntax(model->buffer, TRUE);
     /*g_signal_connect( model->buffer,
                       "changed",
@@ -148,7 +149,7 @@ void yaedSourceModelDestroy(YaedSourceModelHandle model)
 {
   //release the gtk objects
   g_string_free(model->location, TRUE);
-  gtk_object_destroy((GtkObject*)model->buffer);
+  g_object_unref(model->buffer);
   //free the actual model structure
   g_slice_free(struct YaedSourceModel, model);
 
