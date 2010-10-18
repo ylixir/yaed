@@ -46,4 +46,10 @@ bool yaedSourceModelSetLocation(YaedSourceModelHandle model, const GString* loca
 bool yaedSourceModelUpdateHighlighting(YaedSourceModelHandle model, const GString* sample);
 //destroy the model
 void yaedSourceModelDestroy(YaedSourceModelHandle model);
+//reference counting these references are related to ui,
+//not the usual memory management, although at the end
+//of the day the effect is essentially the same
+unsigned int yaedSourceModelIncrementReferenceCount(YaedSourceModelHandle model);
+unsigned int yaedSourceModelDecrementReferenceCount(YaedSourceModelHandle model);
+
 #endif

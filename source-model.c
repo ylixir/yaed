@@ -30,6 +30,7 @@ struct YaedSourceModel
 {
   GtkSourceBuffer* buffer;
   GString* location;
+  unsigned int references;
 };
 
 /*
@@ -154,3 +155,16 @@ void yaedSourceModelDestroy(YaedSourceModelHandle model)
   return;
 }
 
+//reference counting these references are related to ui,
+//not the usual memory management, although at the end
+//of the day the effect is essentially the same
+unsigned int yaedSourceModelIncrementReferenceCount(YaedSourceModelHandle model)
+{
+  model->references++;
+  return model->references;
+}
+unsigned int yaedSourceModelDecrementReferenceCount(YaedSourceModelHandle model)
+{
+  model->references--;
+  return model->references;
+}
