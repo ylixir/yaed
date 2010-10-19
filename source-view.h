@@ -31,6 +31,8 @@ typedef struct YaedSourceView *YaedSourceViewHandle;
 
 //get a new view for the given model
 YaedSourceViewHandle yaedSourceViewNew(const YaedSourceModelHandle model);
+//destroy the view
+void yaedSourceViewDestroy(YaedSourceViewHandle view);
 
 //get the gtk widgets that implement the tab for the view
 GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view);

@@ -102,6 +102,8 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
     gtk_box_pack_start((GtkBox*)label->box, (GtkWidget*)label->text, TRUE, TRUE, 0);
     gtk_box_pack_start((GtkBox*)label->box, (GtkWidget*)image_box, FALSE, TRUE, 0);
     gtk_widget_show((GtkWidget*)label->box);
+    //we have a reference!
+    g_object_ref(label->box);
   }
 
   return label;
@@ -139,7 +141,8 @@ void yaedTabLabelDestroy(YaedTabLabelHandle label)
   {
     //destroy the widgets
     if(NULL != label->box)
-      gtk_widget_destroy((GtkWidget*)label->box); //destroys the text, and icon too
+      g_object_unref(label->box);
+      //gtk_widget_destroy((GtkWidget*)label->box); //destroys the text, and icon too
 
     //free the memory
     g_slice_free(struct YaedTabLabel, label);

@@ -68,6 +68,14 @@ YaedSourceViewHandle yaedSourceViewNew(const YaedSourceModelHandle model)
   return view;
 }
 
+//destroy the view
+void yaedSourceViewDestroy(YaedSourceViewHandle view)
+{
+  yaedTabLabelDestroy(view->label);
+  yaedTabContentsDestroy(view->contents);
+  g_slice_free(struct YaedSourceView, view);
+}
+
 //get the gtk widget that implements the tab label for the view
 GtkWidget* yaedSourceViewLabelWidget(const YaedSourceViewHandle view)
 {

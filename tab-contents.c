@@ -107,6 +107,7 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
     gtk_widget_show((GtkWidget*)contents->text);
     gtk_widget_show((GtkWidget*)scroll_area);
     gtk_widget_show((GtkWidget*)contents->box);
+    g_object_ref(contents->box);
   }
 
   return contents;
@@ -148,7 +149,8 @@ void yaedTabContentsDestroy(YaedTabContentsHandle contents)
     if(NULL != contents->location_bar)
       yaedLocationBarDestroy(contents->location_bar);
     if(NULL != contents->box)
-      gtk_widget_destroy((GtkWidget*)contents->box);
+      g_object_unref(contents->box);
+      //gtk_widget_destroy((GtkWidget*)contents->box);
     g_slice_free(struct YaedTabContents, contents);
   }
   return;
