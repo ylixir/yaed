@@ -45,22 +45,6 @@ struct YaedViewListElement
  * private functions
  */
 
-//create the "new" tab
-void yaedSpiderMakeNewTab(GtkNotebook* tab_strip)
-{
-  GtkImage* child;
-  GtkImage* label;
-  
-  //allocate
-  child = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW,GTK_ICON_SIZE_MENU);
-  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW,GTK_ICON_SIZE_MENU);
-  //show them
-  gtk_widget_show((GtkWidget*)child);
-  gtk_widget_show((GtkWidget*)label);
-  //add it
-  gtk_notebook_append_page(tab_strip, (GtkWidget*)child, (GtkWidget*)label);
-}
-
 //create an empty view
 struct YaedViewListElement* yaedSpiderCreateEmptyView()
 {
@@ -83,6 +67,59 @@ struct YaedViewListElement* yaedSpiderCreateEmptyView()
   return new_element;
 }
 
+//create the "new" tab
+void yaedSpiderMakeNewTab(struct YaedWindowListElement* window_element)
+{
+  GtkImage* label;
+  struct YaedViewListElement* new_view_element;
+  
+  //allocate
+  new_view_element = yaedSpiderCreateEmptyView();
+  label = (GtkImage*)gtk_image_new_from_stock(GTK_STOCK_NEW,GTK_ICON_SIZE_MENU);
+  
+  //link in the new view
+  new_view_element->window_element = window_element;
+  new_view_element->next = view_list;
+  view_list = new_view_element;
+  
+  //show the label widget
+  gtk_widget_show((GtkWidget*)label);
+  //add it
+  gtk_notebook_append_page(
+    window_element->tab_strip,
+    yaedSourceViewContentsWidget(new_view_element->view),
+    (GtkWidget*)label);
+}
+
+//delete the "new" tab
+void yaedSpiderDeleteNewTab(const struct YaedWindowListElement* window_element)
+{
+  GtkWidget* child;
+  
+  //get the view widget
+  child=gtk_notebook_get_nth_page(window_element->tab_strip, -1);
+  for(
+    struct YaedViewListElement** view_element = &view_list;
+    *view_element != NULL;
+    view_element = &((*view_element)->next))
+    if(yaedSourceViewContentsWidget((*view_element)->view) == child)
+    {
+      //we don't want to lose this when we unlink it
+      struct YaedViewListElement* deref = *view_element;
+      //unlink the element
+      *view_element = deref->next;
+      
+      //remove the tab, cleanup the data
+      gtk_notebook_remove_page(window_element->tab_strip, -1);
+      yaedSourceViewDestroy(deref->view);
+      if(0 == yaedSourceModelDecrementReferenceCount(deref->model))
+        yaedSourceModelDestroy(deref->model);
+      g_slice_free(struct YaedViewListElement, deref);
+      //break out of the loop, it will probably crash here if we don't anyhow
+      break;
+    }
+}
+
 //event handler for "new" tab clicks
 void yaedSpiderTabSwitched( GtkNotebook* tab_strip,
                             void* page,
@@ -91,21 +128,25 @@ void yaedSpiderTabSwitched( GtkNotebook* tab_strip,
 {
   //screw you warnings
   page = NULL;
-  
+
   if(gtk_notebook_get_n_pages(tab_strip) == page_num+1)
   {
-    struct YaedViewListElement* new_view_element;
-    new_view_element = yaedSpiderCreateEmptyView();
-    new_view_element->window_element = window_element;
-    new_view_element->next = view_list;
-    view_list = new_view_element;
-
-    gtk_notebook_append_page(tab_strip,
-      yaedSourceViewContentsWidget(new_view_element->view),
-      yaedSourceViewLabelWidget(new_view_element->view));
-
-    yaedSpiderMakeNewTab(tab_strip);
-    gtk_notebook_remove_page(tab_strip, page_num);
+  //get the view widget
+    GtkWidget* child=gtk_notebook_get_nth_page(window_element->tab_strip, -1);
+    for(
+      struct YaedViewListElement* view_element = view_list;
+      view_element != NULL;
+      view_element = view_element->next)
+      if(yaedSourceViewContentsWidget(view_element->view) == child)
+      {
+        yaedSpiderMakeNewTab(window_element);
+        gtk_notebook_set_tab_label(
+          tab_strip,
+          child,
+          yaedSourceViewLabelWidget(view_element->view));
+        //break out of the loop, it will probably crash here if we don't anyhow
+        break;
+      }
   }
 }
 
@@ -123,7 +164,7 @@ gboolean yaedSpiderWindowDeleteEvent(
   event = NULL;
   
   //delete the "new" tab
-  gtk_notebook_remove_page(window_element->tab_strip, -1);
+  yaedSpiderDeleteNewTab(window_element);
   //so i deleted the "new" tab, but sometimes it's still activated?
   //working with gtk is like trying to get a retarded monkey
   //to play chess with me
@@ -209,7 +250,7 @@ bool yaedSpiderInit()
                             yaedSourceViewLabelWidget(view_list->view) );
 
   //create the "new" tab
-  yaedSpiderMakeNewTab(window_list->tab_strip);
+  yaedSpiderMakeNewTab(window_list);
   
   //wire up events
   g_signal_connect( window_list->tab_strip,"switch-page",
@@ -244,7 +285,7 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view)
   *view_pointer = view_element->next;
   //get rid of the "new" tab if this is the last tab in the window
   if(2 == gtk_notebook_get_n_pages(window_element->tab_strip))
-    gtk_notebook_remove_page(window_element->tab_strip, -1);
+    yaedSpiderDeleteNewTab(window_element);
   
   //get our page number and our window widget
   page_num =
