@@ -79,7 +79,7 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
      */
 
     //monospace font
-    theFont = pango_font_description_from_string("monospace 12");
+    theFont = pango_font_description_from_string("monospace 10");
     gtk_widget_modify_font((GtkWidget*)contents->text, theFont);
     pango_font_description_free(theFont);
     //default line spacing feels crowded

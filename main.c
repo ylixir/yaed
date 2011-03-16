@@ -24,8 +24,20 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 int main(int argc, char *argv[])
 {
+  //make threads work
+  g_thread_init(NULL);
+  gdk_threads_init();
+  //make gtk work
   gtk_init(&argc, &argv);
+  //lock the global mutex
+  gdk_threads_enter();
+  
+  //go yaed! be free, fly like the wind!
   if(true == yaedSpiderInit())
     gtk_main();
+    
+  //release the global mutex
+  gdk_threads_leave();
+  
   return 0;
 }
