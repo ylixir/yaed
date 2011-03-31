@@ -370,6 +370,7 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
     //yay, we could lod the file, set the contents of the buffer and stuff
     yaedSourceModelSetBufferContents(new_model, &contents);
     yaedSourceModelUpdateHighlighting(new_model, &contents);
+    yaedSourceModelSetModified(new_model, false);
     g_free(contents.str);
   }
   else if(new_model != old_model)
@@ -445,8 +446,19 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
                       NULL);
   yaedSourceViewModelUpdate(view, new_model);
   yaedSourceModelUpdateHighlighting(new_model, string_contents);
+  yaedSourceModelSetModified(new_model, false);
   g_string_free(string_contents, TRUE);
   
   return true;
 }
 
+//called whenever a model is saved, or modified after a save
+void yaedSpiderRequestViewUpdateForModel(YaedSourceModelHandle model)
+{
+  for(struct YaedViewListElement* views = view_list;
+    NULL != views; views=views->next)
+  {
+    if(model == views->model)
+      yaedSourceViewModelUpdate(views->view, views->model);
+  }
+}

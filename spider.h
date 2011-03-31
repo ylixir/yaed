@@ -36,4 +36,6 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location);
 //called when the user requests a location be stored
 bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location);
 
+//called whenever a model is saved, or modified after a save
+void yaedSpiderRequestViewUpdateForModel(YaedSourceModelHandle model);
 #endif

@@ -52,4 +52,7 @@ void yaedSourceModelDestroy(YaedSourceModelHandle model);
 unsigned int yaedSourceModelIncrementReferenceCount(YaedSourceModelHandle model);
 unsigned int yaedSourceModelDecrementReferenceCount(YaedSourceModelHandle model);
 
+//used to manually set the modified bit of a model (opening, saving, etc)
+void yaedSourceModelSetModified(YaedSourceModelHandle model, bool modified);
+
 #endif

@@ -20,6 +20,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcelanguagemanager.h>
 
+#include "spider.h"
 #include "source-model.h"
 
 /*
@@ -37,6 +38,13 @@ struct YaedSourceModel
  * private functions
  */
 
+void yaedSourceModelModifiedChangedEvent(GtkSourceBuffer* buffer,
+  YaedSourceModelHandle model)
+{
+  buffer=0; //go away
+  yaedSpiderRequestViewUpdateForModel(model);
+}
+
 /*
  * public functions
  */
@@ -53,10 +61,10 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
     model->buffer = gtk_source_buffer_new(NULL);
     g_object_ref(model->buffer);
     gtk_source_buffer_set_highlight_syntax(model->buffer, TRUE);
-    /*g_signal_connect( model->buffer,
-                      "changed",
-                      (GCallback)yaedSourceModelChangedEvent,
-                      model);*/
+    g_signal_connect( model->buffer,
+                      "modified-changed",
+                      (GCallback)yaedSourceModelModifiedChangedEvent,
+                      model);
 
     if(0 == location->len || NULL == location->str)
     {
@@ -168,4 +176,10 @@ unsigned int yaedSourceModelDecrementReferenceCount(YaedSourceModelHandle model)
 {
   model->references--;
   return model->references;
+}
+
+//used to manually set the modified bit of a model (opening, saving, etc)
+void yaedSourceModelSetModified(YaedSourceModelHandle model, bool modified)
+{
+  gtk_text_buffer_set_modified((GtkTextBuffer*)model->buffer, modified);
 }

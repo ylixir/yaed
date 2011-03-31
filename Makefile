@@ -18,7 +18,7 @@ mac:
 	$(CC) -c $< $(CFLAGS)
 main.c: spider.h
 spider.c: spider.h
-source-model.c: source-model.h
+source-model.c: source-model.h spider.h
 source-view.c: source-view.h tab-label.h tab-contents.h
 tab-label.c: tab-label.h spider.h
 tab-contents.c: tab-contents.h location-bar.h
