@@ -183,3 +183,10 @@ void yaedSourceModelSetModified(YaedSourceModelHandle model, bool modified)
 {
   gtk_text_buffer_set_modified((GtkTextBuffer*)model->buffer, modified);
 }
+
+//used to get the modified bit of a model (opening, saving, etc)
+bool yaedSourceModelGetModified(YaedSourceModelHandle model)
+{
+  return gtk_text_buffer_get_modified((GtkTextBuffer*)model->buffer)
+    ? true:false;
+}

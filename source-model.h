@@ -54,5 +54,7 @@ unsigned int yaedSourceModelDecrementReferenceCount(YaedSourceModelHandle model)
 
 //used to manually set the modified bit of a model (opening, saving, etc)
 void yaedSourceModelSetModified(YaedSourceModelHandle model, bool modified);
+//used to get the modified bit of a model (opening, saving, etc)
+bool yaedSourceModelGetModified(YaedSourceModelHandle model);
 
 #endif

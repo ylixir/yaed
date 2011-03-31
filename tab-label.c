@@ -115,15 +115,22 @@ bool yaedTabLabelModelUpdate( YaedTabLabelHandle label,
 {
   //get the base name
   gchar* file_name;
+  GString* label_name;
+  
   file_name = g_path_get_basename(yaedSourceModelGetLocation(model)->str);
 
-  //put the text in the label
-  if(0 != yaedSourceModelGetLocation(model)->len) //file_name isn't empty
-    gtk_label_set_text(label->text, file_name);
-  else //file_name is empty
-    gtk_label_set_text(label->text, "[New]");
+  //put in a * ahead of the label if it's modified
+  label_name = g_string_new( yaedSourceModelGetModified(model) ? "*" : "" );
+  
+  //put in the actual label (file name or [New]
+  g_string_append(label_name,
+    0 != yaedSourceModelGetLocation(model)->len ? file_name : "[New]");
 
+  //put the text in the label 
+  gtk_label_set_text(label->text, label_name->str);
+  
   //clean up and bail
+  g_string_free(label_name, TRUE);
   g_free(file_name);
   return true;
 }
