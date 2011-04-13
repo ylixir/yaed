@@ -19,6 +19,8 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #include "location-bar.h"
 #include "spider.h"
 
+#include <string.h>
+
 /*
  * private types
  */
@@ -33,6 +35,66 @@ struct YaedLocationBar
 /*
  * private functions
  */
+
+//called when (before) the user inserts text into the location bar
+void yaedLocationBarInsertText(
+  GtkEntry* entry,
+  gchar* incoming_text,
+  gint incoming_size,  //size in bytes, maybe -1 if NULL term
+  gint* incoming_position,     //position in characters for insertion
+  YaedLocationBarHandle bar)
+{
+  //make our compiler happy
+  bar=NULL;
+
+  //our variables, wooo
+  const gchar* old_text = gtk_entry_get_text(entry);
+  gchar* new_text;
+  guint old_size;
+  gchar* insertion_pointer;
+
+  //set up the sizes and the offset pointer
+  if(-1 == incoming_size)
+    incoming_size = strlen(incoming_text);
+  old_size = strlen(old_text);
+  insertion_pointer = g_utf8_offset_to_pointer(old_text, *incoming_position);
+
+  //allocate the space for the new string
+  new_text = g_slice_alloc(old_size+incoming_size+1);
+
+  //build the new string
+  g_strlcpy(
+    new_text,
+    old_text,
+    insertion_pointer-old_text+1);
+  g_strlcpy(
+    new_text+(insertion_pointer-old_text),
+    incoming_text,
+    incoming_size+1);
+  g_strlcpy(
+    new_text+(insertion_pointer-old_text)+incoming_size,
+    insertion_pointer,
+    old_size-(insertion_pointer-old_text)+1);
+    
+  //check our result
+  printf("%s\t%s\n",old_text, new_text);
+
+  //cleanup
+  g_slice_free1(old_size+incoming_size+1, new_text);
+}
+
+//called when the user deletes text from the location bar
+void yaedLocationBarDeleteText(
+  GtkEntry* entry,
+  gint start_position,  //position in characters
+  gint end_position,    //in characters, neg means delete to end
+  YaedLocationBarHandle bar)
+{
+  //make our compiler happy
+  bar=NULL;
+
+  printf("%s\t%d\t%d\n", gtk_entry_get_text(entry),start_position,end_position);
+}
 
 //signal that handles user pressing an icon in the location bar
 void yaedLocationBarIconPress(GtkEntry* entry,
@@ -112,11 +174,22 @@ YaedLocationBarHandle yaedLocationBarNew(
       (GtkWidget*)menu_button, FALSE, FALSE, 0);
     
     //connect the signals
-    g_signal_connect( bar->entry,
-                      "icon-press",
-                      (GCallback)yaedLocationBarIconPress,
-                      view);
-    
+    g_signal_connect(
+      bar->entry,
+      "icon-press",
+      (GCallback)yaedLocationBarIconPress,
+      view);
+    g_signal_connect(
+      bar->entry,
+      "insert-text",
+      (GCallback)yaedLocationBarInsertText,
+      bar);
+    g_signal_connect(
+      bar->entry,
+      "delete-text",
+      (GCallback)yaedLocationBarDeleteText,
+      bar);
+      
     //show everything
     gtk_widget_show((GtkWidget*)menu_image);
     gtk_widget_show((GtkWidget*)menu_button);
