@@ -27,6 +27,7 @@ struct YaedLocationBar
 {
   GtkHBox* box;
   GtkEntry* entry;
+  YaedSourceModelHandle model;
 };
 
 /*
@@ -68,7 +69,9 @@ void yaedLocationBarIconPress(GtkEntry* entry,
  */
 
 //create a new location bar
-YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const YaedSourceModelHandle model)
+YaedLocationBarHandle yaedLocationBarNew(
+  const YaedSourceViewHandle view,
+  const YaedSourceModelHandle model)
 {
   //the return value
   YaedLocationBarHandle bar = NULL;
@@ -87,6 +90,7 @@ YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const 
     
     //allocate everything
     bar = g_slice_new(struct YaedLocationBar);
+    bar->model = model;
     bar->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
     bar->entry = (GtkEntry*)gtk_entry_new();
     menu_button = (GtkButton*)gtk_button_new();
@@ -127,9 +131,12 @@ YaedLocationBarHandle yaedLocationBarNew(const YaedSourceViewHandle view, const 
 }
 
 //update the location bar from the given model
-bool yaedLocationBarModelUpdate(YaedLocationBarHandle bar, const YaedSourceModelHandle model)
+bool yaedLocationBarModelUpdate(
+  YaedLocationBarHandle bar,
+  const YaedSourceModelHandle model)
 {
   gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
+  bar->model = model;
   return true;
 }
 //get the location bar's widget
