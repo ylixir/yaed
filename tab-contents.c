@@ -53,6 +53,7 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
     //misc variables we need for packing
     GtkScrolledWindow* scroll_area;
     GtkWidget* location_widget;
+    GList* focus_chain = NULL;
     
     //misc variables for the default setup
     PangoFontDescription* theFont;
@@ -62,9 +63,13 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
     contents->box = (GtkVBox*)gtk_vbox_new(FALSE, 0);
     contents->location_bar = yaedLocationBarNew(view, model);
     contents->text = (GtkSourceView*)gtk_source_view_new_with_buffer(buffer);
-
-    //pack it all up
     scroll_area = (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL);
+
+    //set up the focus chain
+    focus_chain = g_list_prepend(focus_chain, contents->text);
+    gtk_container_set_focus_chain((GtkContainer*)contents->box, focus_chain);
+    
+    //pack it all up
     gtk_container_add((GtkContainer*)scroll_area, (GtkWidget*)contents->text);
     location_widget = yaedLocationBarWidget(contents->location_bar);
     gtk_box_pack_start((GtkBox*)contents->box, location_widget, FALSE, TRUE, 0);
@@ -107,7 +112,10 @@ YaedTabContentsHandle yaedTabContentsNew( const YaedSourceModelHandle model,
     gtk_widget_show((GtkWidget*)contents->text);
     gtk_widget_show((GtkWidget*)scroll_area);
     gtk_widget_show((GtkWidget*)contents->box);
+
+    //memory management
     g_object_ref(contents->box);
+    g_list_free(focus_chain);
   }
 
   return contents;
