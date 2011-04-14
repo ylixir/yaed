@@ -92,7 +92,42 @@ void yaedLocationBarDeleteText(
   //make our compiler happy
   bar=NULL;
 
-  printf("%s\t%d\t%d\n", gtk_entry_get_text(entry),start_position,end_position);
+  //the variables
+  const gchar* old_text = gtk_entry_get_text(entry);
+  gchar* new_text;
+  gchar* end_text;
+  size_t old_length, new_size, start_size;
+
+  //get the length of the old string
+  old_length = g_utf8_strlen(old_text, -1);
+
+  //fixup any problems with the end position
+  if(0 > end_position)
+    end_position = old_length;
+  if(start_position > end_position) //if the positions are swapped
+  { //xor swap
+    end_position ^= start_position;
+    start_position ^= end_position;
+    end_position ^= start_position;
+  }
+
+  //get the pointer for the chunk following the deletion
+  end_text = g_utf8_offset_to_pointer(old_text, end_position);
+
+  //get the size of the final string
+  start_size = g_utf8_offset_to_pointer(old_text, start_position) - old_text;
+  new_size = start_size +
+    (g_utf8_offset_to_pointer(end_text, old_length-end_position) - end_text);
+
+  //build the string
+  new_text = g_slice_alloc(new_size+1);
+  g_utf8_strncpy(new_text, old_text, start_position);
+  g_utf8_strncpy(new_text+start_size, end_text, old_length - end_position);
+  
+  printf("%s\t%s\n", old_text, new_text);
+
+  //cleanup
+  g_slice_free1(new_size+1, new_text);
 }
 
 //signal that handles user pressing an icon in the location bar
