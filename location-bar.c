@@ -19,8 +19,6 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 #include "location-bar.h"
 #include "spider.h"
 
-#include <string.h>
-
 /*
  * private types
  */
@@ -50,37 +48,38 @@ void yaedLocationBarInsertText(
   //our variables, wooo
   const gchar* old_text = gtk_entry_get_text(entry);
   gchar* new_text;
-  guint old_size;
-  gchar* insertion_pointer;
+  size_t incoming_length, old_length;
+  size_t old_size, new_size;
+  gchar* built_ptr;
 
-  //set up the sizes and the offset pointer
-  if(-1 == incoming_size)
-    incoming_size = strlen(incoming_text);
-  old_size = strlen(old_text);
-  insertion_pointer = g_utf8_offset_to_pointer(old_text, *incoming_position);
+  //get the number of characters that are incoming
+  incoming_length = g_utf8_strlen(incoming_text, incoming_size);
+  //get the size of the incoming text
+  incoming_size =
+    g_utf8_offset_to_pointer(incoming_text, incoming_length) - incoming_text;
 
-  //allocate the space for the new string
-  new_text = g_slice_alloc(old_size+incoming_size+1);
+  //get the old_text info
+  old_length = g_utf8_strlen(old_text, -1);
+  old_size = g_utf8_offset_to_pointer(old_text, old_length) - old_text;
 
-  //build the new string
-  g_strlcpy(
-    new_text,
-    old_text,
-    insertion_pointer-old_text+1);
-  g_strlcpy(
-    new_text+(insertion_pointer-old_text),
-    incoming_text,
-    incoming_size+1);
-  g_strlcpy(
-    new_text+(insertion_pointer-old_text)+incoming_size,
-    insertion_pointer,
-    old_size-(insertion_pointer-old_text)+1);
+  //for readabilit, the new_size
+  new_size = old_size+incoming_size;
+
+  //build the string
+  new_text = g_slice_alloc(new_size+1);
+  g_utf8_strncpy(new_text, old_text, *incoming_position);
+  built_ptr = g_utf8_offset_to_pointer(new_text, *incoming_position);
+  g_utf8_strncpy(built_ptr, incoming_text, incoming_length);
+  g_utf8_strncpy(
+    built_ptr + incoming_size,
+    old_text + (built_ptr - new_text),
+    old_length - *incoming_position);
     
   //check our result
   printf("%s\t%s\n",old_text, new_text);
 
   //cleanup
-  g_slice_free1(old_size+incoming_size+1, new_text);
+  g_slice_free1(new_size+1, new_text);
 }
 
 //called when the user deletes text from the location bar
