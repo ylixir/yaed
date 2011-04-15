@@ -34,6 +34,13 @@ struct YaedLocationBar
  * private functions
  */
 
+//called to rebuild the completion model
+void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* directory)
+{
+  bar = NULL;
+  printf("%s\n", directory);
+}
+
 //called when (before) the user inserts text into the location bar
 void yaedLocationBarInsertText(
   GtkEntry* entry,
@@ -48,8 +55,10 @@ void yaedLocationBarInsertText(
   //our variables, wooo
   const gchar* old_text = gtk_entry_get_text(entry);
   gchar* new_text;
+  gchar* new_directory;
+  gchar* old_directory;
   size_t incoming_length, old_length;
-  size_t old_size, new_size;
+  ptrdiff_t old_size, new_size;
   gchar* built_ptr;
 
   //get the number of characters that are incoming
@@ -75,10 +84,17 @@ void yaedLocationBarInsertText(
     old_text + (built_ptr - new_text),
     old_length - *incoming_position);
     
-  //check our result
-  printf("%s\t%s\n",old_text, new_text);
+  //okies, check to see if the base directory has changed
+  old_directory = g_path_get_dirname(old_text);
+  new_directory = g_path_get_dirname(new_text);
+  if(0 != g_utf8_collate(old_directory, new_directory))
+  {
+    yaedLocationBarRebuildCompletion(bar, new_directory);
+  }
 
   //cleanup
+  g_free(new_directory);
+  g_free(old_directory);
   g_slice_free1(new_size+1, new_text);
 }
 
@@ -96,7 +112,10 @@ void yaedLocationBarDeleteText(
   const gchar* old_text = gtk_entry_get_text(entry);
   gchar* new_text;
   gchar* end_text;
-  size_t old_length, new_size, start_size;
+  gchar* new_directory;
+  gchar* old_directory;
+  size_t old_length;
+  ptrdiff_t new_size, start_size;
 
   //get the length of the old string
   old_length = g_utf8_strlen(old_text, -1);
@@ -124,9 +143,17 @@ void yaedLocationBarDeleteText(
   g_utf8_strncpy(new_text, old_text, start_position);
   g_utf8_strncpy(new_text+start_size, end_text, old_length - end_position);
   
-  printf("%s\t%s\n", old_text, new_text);
+  //okies, check to see if the base directory has changed
+  old_directory = g_path_get_dirname(old_text);
+  new_directory = g_path_get_dirname(new_text);
+  if(0 != g_utf8_collate(old_directory, new_directory))
+  {
+    yaedLocationBarRebuildCompletion(bar, new_directory);
+  }
 
   //cleanup
+  g_free(new_directory);
+  g_free(old_directory);
   g_slice_free1(new_size+1, new_text);
 }
 
@@ -183,12 +210,14 @@ YaedLocationBarHandle yaedLocationBarNew(
     //the menu button and the image it displays
     GtkButton* menu_button;
     GtkImage* menu_image;
+    gchar* location_directory;
     
     //allocate everything
     bar = g_slice_new(struct YaedLocationBar);
     bar->model = model;
     bar->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
     bar->entry = (GtkEntry*)gtk_entry_new();
+    gtk_entry_set_completion(bar->entry, gtk_entry_completion_new());
     menu_button = (GtkButton*)gtk_button_new();
     menu_image = (GtkImage*)gtk_image_new_from_stock(
       GTK_STOCK_PREFERENCES, GTK_ICON_SIZE_MENU);
@@ -196,6 +225,8 @@ YaedLocationBarHandle yaedLocationBarNew(
     //set up and pack everything
     gtk_container_add((GtkContainer*)menu_button, (GtkWidget*)menu_image);
     gtk_entry_set_text(bar->entry, location->str);
+    location_directory = g_path_get_dirname(location->str);
+    yaedLocationBarRebuildCompletion(bar, location_directory);
     gtk_entry_set_icon_from_stock(bar->entry,
                                   GTK_ENTRY_ICON_PRIMARY,
                                   GTK_STOCK_SAVE);
@@ -232,6 +263,9 @@ YaedLocationBarHandle yaedLocationBarNew(
     
     //make sure gtk only cleans up when we want
     g_object_ref(bar->box);
+
+    //free the location directory
+    g_free(location_directory);
   }
 
   return bar;
@@ -242,8 +276,18 @@ bool yaedLocationBarModelUpdate(
   YaedLocationBarHandle bar,
   const YaedSourceModelHandle model)
 {
-  gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
+  gchar* location_directory;
+
+  //associate the model, update the location text
   bar->model = model;
+  gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
+
+  //rebuild the completion model
+  location_directory =
+    g_path_get_dirname(yaedSourceModelGetLocation(model)->str);
+  yaedLocationBarRebuildCompletion(bar, location_directory);
+  g_free(location_directory);
+  
   return true;
 }
 //get the location bar's widget
