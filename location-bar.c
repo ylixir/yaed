@@ -80,7 +80,9 @@ void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* director
   
   //the list we are building
   GtkListStore* list;
-  list = gtk_list_store_new(COMPLETION_N_COLUMNS, G_TYPE_STRING);
+  list = (GtkListStore*)gtk_entry_completion_get_model(
+    gtk_entry_get_completion(bar->entry));
+  gtk_list_store_clear(list);
   
   //just in case there were no path components, get rid of the dot
   if(0 == g_utf8_collate(".", directory))
@@ -152,11 +154,6 @@ void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* director
     yaedLocationBarAppendDirectoryContentsToList(built_path, list);
     g_free(built_path);
   }
-  
-  //set the list
-  gtk_entry_completion_set_model(
-    gtk_entry_get_completion(bar->entry),
-    (GtkTreeModel*)list);
 }
 
 //called when (before) the user inserts text into the location bar
@@ -198,7 +195,7 @@ void yaedLocationBarInsertText(
     built_ptr + incoming_size,
     old_text + (built_ptr - new_text),
     old_length - *incoming_position);
-    
+
   //okies, check to see if the base directory has changed
   old_directory = g_path_get_dirname(old_text);
   new_directory = g_path_get_dirname(new_text);
@@ -330,9 +327,14 @@ YaedLocationBarHandle yaedLocationBarNew(
     bar->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
     bar->entry = (GtkEntry*)gtk_entry_new();
     gtk_entry_set_completion(bar->entry, gtk_entry_completion_new());
+    //set the list
+    gtk_entry_completion_set_model(
+      gtk_entry_get_completion(bar->entry),
+      (GtkTreeModel*)gtk_list_store_new(COMPLETION_N_COLUMNS, G_TYPE_STRING));
     gtk_entry_completion_set_text_column(
       gtk_entry_get_completion(bar->entry),
       COMPLETION_PATH_TEXT);
+
     menu_button = (GtkButton*)gtk_button_new();
     menu_image = (GtkImage*)gtk_image_new_from_stock(
       GTK_STOCK_PREFERENCES, GTK_ICON_SIZE_MENU);
