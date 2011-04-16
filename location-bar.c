@@ -30,15 +30,133 @@ struct YaedLocationBar
   YaedSourceModelHandle model;
 };
 
+enum
+{
+  COMPLETION_PATH_TEXT,
+  COMPLETION_N_COLUMNS
+};
 /*
  * private functions
  */
 
+//convenience func for filling out the completion list with directory contents
+void yaedLocationBarAppendDirectoryContentsToList(
+  const gchar* directory,
+  GtkListStore* list)
+{
+  //the variable used to track the open directory
+  GDir* current_directory;
+  //the list iterator
+  GtkTreeIter iter;
+  
+  //open the directory
+  current_directory = g_dir_open(directory, 0, NULL);
+  if(NULL != current_directory)
+  {
+    //iterate over the contents
+    const gchar* contents;
+    while(NULL != (contents = g_dir_read_name(current_directory)))
+    {
+      gchar* contents_path;
+      contents_path = g_build_filename(directory, contents, NULL);
+      
+      //placeholders
+      gtk_list_store_append(list, &iter);
+      gtk_list_store_set(list, &iter, COMPLETION_PATH_TEXT, contents_path, -1);
+
+      //cleanup
+      g_free(contents_path);
+    }
+
+    //close it up
+    g_dir_close(current_directory);
+  }
+}
 //called to rebuild the completion model
 void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* directory)
 {
-  bar = NULL;
-  printf("%s\n", directory);
+  //track root status
+  bool is_root;
+  
+  //the list we are building
+  GtkListStore* list;
+  list = gtk_list_store_new(COMPLETION_N_COLUMNS, G_TYPE_STRING);
+  
+  //just in case there were no path components, get rid of the dot
+  if(0 == g_utf8_collate(".", directory))
+    directory++;
+
+  is_root = false;
+  if(TRUE == g_path_is_absolute(directory))
+    is_root = true;
+  else if(TRUE == g_unichar_isalpha(directory[0]))
+    if(':' == directory[1])
+      is_root = true;
+      
+  //is the path absolute?
+  if(true == is_root)
+  {
+    yaedLocationBarAppendDirectoryContentsToList(directory, list);
+  }
+  else
+  {
+    //these will be used for building directory paths
+    gchar* built_path;
+    const gchar* home_path;
+
+    //make sure we aren't directly pointing to the home directory
+    if('~' == directory[0])
+    {
+      directory++;
+      if('/' == directory[0] || '\\' == directory[0])
+        directory++;
+    }
+    else //we need to build paths for root directories, and the cwd
+    {
+      //we'll need the cwd
+      gchar* working_path;
+      //we in windows?
+      if(TRUE == g_file_test("c:\\", G_FILE_TEST_IS_DIR))
+      {
+        //check all roots from c:-z:
+        built_path = g_build_filename("c:\\", directory, NULL);
+        for(;'z' >= *built_path; built_path[0]++)
+          yaedLocationBarAppendDirectoryContentsToList(built_path, list);
+        //cleanup
+        g_free(built_path);
+      }
+      else //we aren't in windows
+      {
+        //do the / root
+        built_path = g_build_filename("/", directory, NULL);
+        yaedLocationBarAppendDirectoryContentsToList(built_path, list);
+        g_free(built_path);
+      }
+
+      //do the cwd check
+      working_path =
+        g_path_get_dirname(yaedSourceModelGetLocation(bar->model)->str);
+      if(0 != g_utf8_collate(".", working_path))
+      {
+        //fill out the cwd contents
+        built_path = g_build_filename(working_path, directory, NULL);
+        yaedLocationBarAppendDirectoryContentsToList(built_path, list);
+        g_free(built_path);
+      }
+      g_free(working_path);
+    }
+
+    //get the home path
+    home_path = g_get_home_dir();
+    built_path = g_build_filename(home_path, directory, NULL);
+    yaedLocationBarAppendDirectoryContentsToList(built_path, list);
+    g_free(built_path);
+  }
+  
+  //set the list
+  gtk_entry_completion_set_model(
+    gtk_entry_get_completion(bar->entry),
+    (GtkTreeModel*)list);
 }
 
 //called when (before) the user inserts text into the location bar
@@ -49,9 +167,6 @@ void yaedLocationBarInsertText(
   gint* incoming_position,     //position in characters for insertion
   YaedLocationBarHandle bar)
 {
-  //make our compiler happy
-  bar=NULL;
-
   //our variables, wooo
   const gchar* old_text = gtk_entry_get_text(entry);
   gchar* new_text;
@@ -105,9 +220,6 @@ void yaedLocationBarDeleteText(
   gint end_position,    //in characters, neg means delete to end
   YaedLocationBarHandle bar)
 {
-  //make our compiler happy
-  bar=NULL;
-
   //the variables
   const gchar* old_text = gtk_entry_get_text(entry);
   gchar* new_text;
@@ -218,6 +330,9 @@ YaedLocationBarHandle yaedLocationBarNew(
     bar->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
     bar->entry = (GtkEntry*)gtk_entry_new();
     gtk_entry_set_completion(bar->entry, gtk_entry_completion_new());
+    gtk_entry_completion_set_text_column(
+      gtk_entry_get_completion(bar->entry),
+      COMPLETION_PATH_TEXT);
     menu_button = (GtkButton*)gtk_button_new();
     menu_image = (GtkImage*)gtk_image_new_from_stock(
       GTK_STOCK_PREFERENCES, GTK_ICON_SIZE_MENU);
