@@ -64,8 +64,11 @@ void yaedLocationBarUpdateIconActions(
     if(false == yaedUtilityDirectoryExists(bar_location))
     {
       //can't save to an invalid path
-      if(true == yaedUtilityLocationHasValidPath(bar_location))
+      if(true == yaedUtilityLocationHasValidPath(bar_location)
+        && 0 != g_utf8_collate("", bar_location))
+      {
         primary_icon = GTK_STOCK_SAVE_AS;
+      }
       //can't open a file that doesn't exist
       if(true == yaedUtilityLocationExists(bar_location))
         secondary_icon = GTK_STOCK_OPEN;
