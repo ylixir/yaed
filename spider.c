@@ -231,7 +231,7 @@ bool yaedSpiderInit()
 
   //create the main window
   window_list->window = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
+  gtk_window_set_default_size(window_list->window, 600, 400);
   //create the tab strip
   window_list->tab_strip = (GtkNotebook*)gtk_notebook_new();
   gtk_container_add((GtkContainer*)window_list->window,
