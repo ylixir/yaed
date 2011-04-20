@@ -10,7 +10,7 @@ else
 	CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
 endif
 
-yaed: main.o spider.o source-model.o source-view.o tab-label.o tab-contents.o location-bar.o
+yaed: main.o utility.o spider.o source-model.o source-view.o tab-label.o tab-contents.o location-bar.o
 	$(CC) -o $@ $^ $(LFLAGS)
 mac:
 	echo "make OSX=yes yaed; exit;"|~/.local/bin/jhbuild shell
@@ -18,11 +18,12 @@ mac:
 	$(CC) -c $< $(CFLAGS)
 main.c: spider.h
 spider.c: spider.h
+utility.c: utility.h
 source-model.c: source-model.h spider.h
 source-view.c: source-view.h tab-label.h tab-contents.h
 tab-label.c: tab-label.h spider.h
 tab-contents.c: tab-contents.h location-bar.h
-location-bar.c: location-bar.h spider.h
+location-bar.c: location-bar.h spider.h utility.h
 spider.h: source-view.h
 source-view.h: source-model.h
 source-model.h:

@@ -18,6 +18,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 #include "location-bar.h"
 #include "spider.h"
+#include "utility.h"
 
 /*
  * private types
@@ -38,6 +39,57 @@ enum
 /*
  * private functions
  */
+
+//convenience function for updating the action icons in the bar
+void yaedLocationBarUpdateIconActions(
+  YaedLocationBarHandle bar,
+  const gchar* bar_location)
+{
+  //the variables we will need
+  const gchar* model_location; //where the model is currently pointing
+  bool model_modified, location_modified; //state variables
+  const gchar* primary_icon = NULL; //the "save" icon
+  const gchar* secondary_icon = NULL; //the "open" icon
+
+  //set up the variables
+  model_location = yaedSourceModelGetLocation(bar->model)->str;
+  model_modified = yaedSourceModelGetModified(bar->model);
+  location_modified =
+    (0 == g_utf8_collate(model_location, bar_location)) ? false : true;
+
+  //if the using has typed a new location into the location bar
+  if(true == location_modified)
+  {
+    //make sure we aren't pointing at a directory
+    if(false == yaedUtilityDirectoryExists(bar_location))
+    {
+      //can't save to an invalid path
+      if(true == yaedUtilityLocationHasValidPath(bar_location))
+        primary_icon = GTK_STOCK_SAVE_AS;
+      //can't open a file that doesn't exist
+      if(true == yaedUtilityLocationExists(bar_location))
+        secondary_icon = GTK_STOCK_OPEN;
+    }
+  }
+  //if we aren't pointing to nothing, and we aren't typing in a new location
+  else if(0 != g_utf8_collate("", model_location))
+  {
+    //save only makes sense if we've modified something
+    if(true == yaedSourceModelGetModified(bar->model))
+      primary_icon = GTK_STOCK_SAVE;
+    secondary_icon = GTK_STOCK_REFRESH; //changes on disk can happen outside
+  }
+
+  //naturally we have to actually set the icons
+  gtk_entry_set_icon_from_stock(
+    bar->entry,
+    GTK_ENTRY_ICON_PRIMARY,
+    primary_icon);
+  gtk_entry_set_icon_from_stock(
+    bar->entry,
+    GTK_ENTRY_ICON_SECONDARY,
+    secondary_icon);
+}
 
 //convenience func for filling out the completion list with directory contents
 void yaedLocationBarAppendDirectoryContentsToList(
@@ -204,6 +256,9 @@ void yaedLocationBarInsertText(
     yaedLocationBarRebuildCompletion(bar, new_directory);
   }
 
+  //update the icons
+  yaedLocationBarUpdateIconActions(bar, new_text);
+  
   //cleanup
   g_free(new_directory);
   g_free(old_directory);
@@ -259,6 +314,9 @@ void yaedLocationBarDeleteText(
   {
     yaedLocationBarRebuildCompletion(bar, new_directory);
   }
+
+  //update the icons
+  yaedLocationBarUpdateIconActions(bar, new_text);
 
   //cleanup
   g_free(new_directory);
@@ -344,12 +402,7 @@ YaedLocationBarHandle yaedLocationBarNew(
     gtk_entry_set_text(bar->entry, location->str);
     location_directory = g_path_get_dirname(location->str);
     yaedLocationBarRebuildCompletion(bar, location_directory);
-    gtk_entry_set_icon_from_stock(bar->entry,
-                                  GTK_ENTRY_ICON_PRIMARY,
-                                  GTK_STOCK_SAVE);
-    gtk_entry_set_icon_from_stock(bar->entry,
-                                  GTK_ENTRY_ICON_SECONDARY,
-                                  GTK_STOCK_OPEN);
+    yaedLocationBarUpdateIconActions(bar, location->str);
     gtk_box_pack_start((GtkBox*)bar->box,
       (GtkWidget*)bar->entry, TRUE, TRUE, 0);
     gtk_box_pack_start((GtkBox*)bar->box,
@@ -399,6 +452,8 @@ bool yaedLocationBarModelUpdate(
   bar->model = model;
   gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
 
+  //update the icons
+  yaedLocationBarUpdateIconActions(bar, gtk_entry_get_text(bar->entry));
   //rebuild the completion model
   location_directory =
     g_path_get_dirname(yaedSourceModelGetLocation(model)->str);
