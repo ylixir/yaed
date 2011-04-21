@@ -29,6 +29,7 @@ struct YaedLocationBar
   GtkHBox* box;
   GtkEntry* entry;
   YaedSourceModelHandle model;
+  YaedSourceViewHandle view;
 };
 
 enum
@@ -43,16 +44,16 @@ enum
 //convenience function for updating the action icons in the bar
 void yaedLocationBarUpdateIconActions(
   YaedLocationBarHandle bar,
-  const gchar* bar_location)
+  const char* bar_location)
 {
   //the variables we will need
-  const gchar* model_location; //where the model is currently pointing
+  const char* model_location; //where the model is currently pointing
   bool model_modified, location_modified; //state variables
   const gchar* primary_icon = NULL; //the "save" icon
   const gchar* secondary_icon = NULL; //the "open" icon
 
   //set up the variables
-  model_location = yaedSourceModelGetLocation(bar->model)->str;
+  model_location = yaedSourceModelGetLocation(bar->model);
   model_modified = yaedSourceModelGetModified(bar->model);
   location_modified =
     (0 == g_utf8_collate(model_location, bar_location)) ? false : true;
@@ -137,7 +138,9 @@ void yaedLocationBarAppendDirectoryContentsToList(
 }
 
 //called to rebuild the completion model
-void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* directory)
+void yaedLocationBarRebuildCompletion(
+  YaedLocationBarHandle bar,
+  gchar* directory)
 {
   //the list we are building
   GtkListStore* list;
@@ -149,6 +152,40 @@ void yaedLocationBarRebuildCompletion(YaedLocationBarHandle bar, gchar* director
   
   //rebuild the list
   yaedLocationBarAppendDirectoryContentsToList(directory, list);
+}
+
+void yaedLocationBarActivate(GtkEntry* entry, YaedLocationBarHandle bar)
+{
+  const char* new_text; //the text in the action bar
+  
+  //get the text that the action is being requested for
+  new_text = gtk_entry_get_text(entry);
+  
+  //make sure that we don't have a directory, but we do have a valid path
+  if(false == yaedUtilityDirectoryExists(new_text)
+    && true == yaedUtilityLocationHasValidPath(new_text))
+  {
+    //are we pointing to an existing file?
+    if(false == yaedUtilityLocationExists(new_text))
+    {
+      //nope, save if it makes sense
+      if(true == yaedSourceModelGetModified(bar->model)
+        || 0 != g_utf8_collate("",yaedSourceModelGetLocation(bar->model)))
+      {
+        yaedSpiderStoreLocation(bar->view, new_text);
+      }
+    }
+    //have we saved our work?
+    else if(false == yaedSourceModelGetModified(bar->model))
+    {
+      //yep, saved our work, open if it makes sense
+      if(0 !=
+        g_utf8_collate(new_text, yaedSourceModelGetLocation(bar->model)))
+      {
+        yaedSpiderLoadLocation(bar->view, new_text);
+      }
+    }
+  }
 }
 
 //called when (before) the user inserts text into the location bar
@@ -274,13 +311,17 @@ void yaedLocationBarIconPress(GtkEntry* entry,
                               GdkEvent* event,
                               YaedSourceViewHandle view)
 {
-  GString* location;
+  const char* location;
   //dummy code
   event = event;
   position = position;
   //get the location string from the location bar
+  /*
   location = g_string_new_len(gtk_entry_get_text(entry),
                               gtk_entry_get_text_length(entry));
+  */
+  location = gtk_entry_get_text(entry);
+  
   switch(position)
   {
   case GTK_ENTRY_ICON_PRIMARY:
@@ -311,7 +352,7 @@ YaedLocationBarHandle yaedLocationBarNew(
   YaedLocationBarHandle bar = NULL;
 
   //get the location from the model
-  GString* location = NULL;
+  char* location = NULL;
   if(NULL != model)
     location = yaedSourceModelGetLocation(model);
 
@@ -326,6 +367,7 @@ YaedLocationBarHandle yaedLocationBarNew(
     //allocate everything
     bar = g_slice_new(struct YaedLocationBar);
     bar->model = model;
+    bar->view = view;
     bar->box = (GtkHBox*)gtk_hbox_new(FALSE, 0);
     bar->entry = (GtkEntry*)gtk_entry_new();
     gtk_entry_set_completion(bar->entry, gtk_entry_completion_new());
@@ -343,10 +385,10 @@ YaedLocationBarHandle yaedLocationBarNew(
 
     //set up and pack everything
     gtk_container_add((GtkContainer*)menu_button, (GtkWidget*)menu_image);
-    gtk_entry_set_text(bar->entry, location->str);
-    location_directory = g_path_get_dirname(location->str);
+    gtk_entry_set_text(bar->entry, location);
+    location_directory = g_path_get_dirname(location);
     yaedLocationBarRebuildCompletion(bar, location_directory);
-    yaedLocationBarUpdateIconActions(bar, location->str);
+    yaedLocationBarUpdateIconActions(bar, location);
     gtk_box_pack_start((GtkBox*)bar->box,
       (GtkWidget*)bar->entry, TRUE, TRUE, 0);
     gtk_box_pack_start((GtkBox*)bar->box,
@@ -367,6 +409,11 @@ YaedLocationBarHandle yaedLocationBarNew(
       bar->entry,
       "delete-text",
       (GCallback)yaedLocationBarDeleteText,
+      bar);
+    g_signal_connect(
+      bar->entry,
+      "activate",
+      (GCallback)yaedLocationBarActivate,
       bar);
       
     //show everything
@@ -394,13 +441,13 @@ bool yaedLocationBarModelUpdate(
 
   //associate the model, update the location text
   bar->model = model;
-  gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model)->str);
+  gtk_entry_set_text(bar->entry, yaedSourceModelGetLocation(model));
 
   //update the icons
   yaedLocationBarUpdateIconActions(bar, gtk_entry_get_text(bar->entry));
   //rebuild the completion model
   location_directory =
-    g_path_get_dirname(yaedSourceModelGetLocation(model)->str);
+    g_path_get_dirname(yaedSourceModelGetLocation(model));
   yaedLocationBarRebuildCompletion(bar, location_directory);
   g_free(location_directory);
   

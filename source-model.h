@@ -32,16 +32,16 @@ typedef struct YaedSourceModel *YaedSourceModelHandle;
  */
 
 //create a new model from the given location
-YaedSourceModelHandle yaedSourceModelNew(const GString* location);
+YaedSourceModelHandle yaedSourceModelNew(const char* location);
 
 //get the location string, or the buffer object for the model
-GString* yaedSourceModelGetLocation(const YaedSourceModelHandle model);
+char* yaedSourceModelGetLocation(const YaedSourceModelHandle model);
 GtkSourceBuffer* yaedSourceModelGetBuffer(const YaedSourceModelHandle model);
 
 //update the contents of the model
 bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model, const GString* content);
 //update the location the model references
-bool yaedSourceModelSetLocation(YaedSourceModelHandle model, const GString* location);
+bool yaedSourceModelSetLocation(YaedSourceModelHandle model, const char* location);
 //update the syntax highlighting scheme
 bool yaedSourceModelUpdateHighlighting(YaedSourceModelHandle model, const GString* sample);
 //destroy the model

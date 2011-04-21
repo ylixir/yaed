@@ -49,21 +49,16 @@ struct YaedViewListElement
 //create an empty view
 struct YaedViewListElement* yaedSpiderCreateEmptyView()
 {
-  GString* tmp_string;
   struct YaedViewListElement* new_element;
   
   //allocate
   new_element = g_slice_new0(struct YaedViewListElement);
-  tmp_string = g_string_new(NULL);
   
   //create the model
-  new_element->model = yaedSourceModelNew(tmp_string);
+  new_element->model = yaedSourceModelNew("");
   yaedSourceModelIncrementReferenceCount(new_element->model);
   //create the view
   new_element->view = yaedSourceViewNew(new_element->model);
-
-  //free
-  g_string_free(tmp_string, TRUE);
   
   return new_element;
 }
@@ -330,7 +325,7 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view)
 }
 
 //called when the user requests a location be (re)loaded
-bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
+bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const char* location)
 {
   struct YaedViewListElement* view_element = NULL;
   struct YaedViewListElement* iterator = NULL;
@@ -346,13 +341,13 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
   {
     if(iterator->view == view)
       view_element = iterator;
-    if(TRUE
-        == g_string_equal(location,yaedSourceModelGetLocation(iterator->model)))
+    if(0
+        == g_utf8_collate(location,yaedSourceModelGetLocation(iterator->model)))
       new_model = iterator->model;
   }
   old_model = view_element->model;
   //err, special case, empty locations don't share models
-  if(0 == location->len)
+  if(0 == yaedUtilityUtf8GetLength(location, NULL))
     new_model = NULL;
   
   //make sure we have some kind of new model to work with so the logic works
@@ -367,7 +362,7 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
   //load/reload
   if(1 == new_model_count || new_model == old_model)
   {
-    char* expanded_location = yaedUtilityExpandPath(location->str);
+    char* expanded_location = yaedUtilityExpandPath(location);
     if(TRUE ==
       g_file_get_contents(expanded_location,&contents.str,&contents.len,NULL))
     {
@@ -404,7 +399,7 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
 }
 
 //called when the user requests a location be stored
-bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
+bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const char* location)
 {
   struct YaedViewListElement* view_element = NULL;
   struct YaedViewListElement* iterator = NULL;
@@ -422,13 +417,13 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   {
     if(iterator->view == view)
       view_element = iterator;
-    if(TRUE
-        == g_string_equal(location,yaedSourceModelGetLocation(iterator->model)))
+    if(0
+        == g_utf8_collate(location,yaedSourceModelGetLocation(iterator->model)))
       new_model = iterator->model;
   }
   old_model = view_element->model;
   //err, special case, empty locations don't share models
-  if(0 == location->len)
+  if(0 == yaedUtilityUtf8GetLength(location, NULL))
     new_model = old_model;
   if(NULL == new_model) //oh noes, we don't have a new model!
     new_model = yaedSourceModelNew(location);
@@ -448,7 +443,7 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   if(0 == yaedSourceModelDecrementReferenceCount(old_model))
     yaedSourceModelDestroy(old_model);
     
-  expanded_location = yaedUtilityExpandPath(location->str);
+  expanded_location = yaedUtilityExpandPath(location);
   g_file_set_contents(expanded_location,
                       string_contents->str,
                       string_contents->len,

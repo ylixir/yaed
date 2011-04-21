@@ -18,6 +18,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 #include "tab-label.h"
 #include "spider.h"
+#include "utility.h"
 
 /*
  * private data types
@@ -58,7 +59,7 @@ YaedTabLabelHandle yaedTabLabelNew( const YaedSourceModelHandle model,
 {
   //the return value
   YaedTabLabelHandle label = NULL;
-  GString* location = NULL;
+  char* location = NULL;
 
   //get the location if we can
   if(NULL != model)
@@ -114,17 +115,18 @@ bool yaedTabLabelModelUpdate( YaedTabLabelHandle label,
                               const YaedSourceModelHandle model)
 {
   //get the base name
-  gchar* file_name;
+  char* file_name;
   GString* label_name;
   
-  file_name = g_path_get_basename(yaedSourceModelGetLocation(model)->str);
+  file_name = g_path_get_basename(yaedSourceModelGetLocation(model));
 
   //put in a * ahead of the label if it's modified
   label_name = g_string_new( yaedSourceModelGetModified(model) ? "*" : "" );
   
   //put in the actual label (file name or [New]
   g_string_append(label_name,
-    0 != yaedSourceModelGetLocation(model)->len ? file_name : "[New]");
+    0 !=  yaedUtilityUtf8GetLength(yaedSourceModelGetLocation(model), NULL)
+    ? file_name : "[New]");
 
   //put the text in the label 
   gtk_label_set_text(label->text, label_name->str);

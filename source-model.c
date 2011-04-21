@@ -22,6 +22,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 
 #include "spider.h"
 #include "source-model.h"
+#include "utility.h"
 
 /*
  * private types
@@ -30,7 +31,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 struct YaedSourceModel
 {
   GtkSourceBuffer* buffer;
-  GString* location;
+  char* location;
   unsigned int references;
 };
 
@@ -50,14 +51,20 @@ void yaedSourceModelModifiedChangedEvent(GtkSourceBuffer* buffer,
  */
 
 //create a new model from the given location
-YaedSourceModelHandle yaedSourceModelNew(const GString* location)
+YaedSourceModelHandle yaedSourceModelNew(const char* location)
 {
   //this is what will be returned
   YaedSourceModelHandle model = NULL;
 
   if(NULL != location)
   {
+    //variables for the string
+    size_t length, size;
+    
+    //allocat the structure
     model = g_slice_new0(struct YaedSourceModel);
+    
+    //setup the buffer
     model->buffer = gtk_source_buffer_new(NULL);
     g_object_ref(model->buffer);
     gtk_source_buffer_set_highlight_syntax(model->buffer, TRUE);
@@ -65,22 +72,21 @@ YaedSourceModelHandle yaedSourceModelNew(const GString* location)
                       "modified-changed",
                       (GCallback)yaedSourceModelModifiedChangedEvent,
                       model);
-
-    if(0 == location->len || NULL == location->str)
-    {
-      model->location = g_string_new("");
-    }
-    else
-    {
-      model->location = g_string_new_len(location->str, location->len);
-    }
+    
+    //get the string dimensions
+    size = yaedUtilityUtf8GetSize(location, &length);
+    //allocate and copy
+    model->location = g_malloc(size);
+    g_utf8_strncpy(model->location, location, length);
+    //terminate
+    model->location[size-1] = '\0';
   }
 
   return model;
 }
 
 //get the location string for the model
-GString* yaedSourceModelGetLocation(const YaedSourceModelHandle model)
+char* yaedSourceModelGetLocation(const YaedSourceModelHandle model)
 {
   //if we got a bogus model, return null, otherwise pass out the location
   return NULL == model ? NULL : model->location;
@@ -106,9 +112,28 @@ bool yaedSourceModelSetBufferContents(YaedSourceModelHandle model,
 
 //update the location the model references
 bool yaedSourceModelSetLocation(YaedSourceModelHandle model,
-                                const GString* location)
+                                const char* location)
 {
-  g_string_assign(model->location, location->str);
+  //the dimensions of the new location
+  size_t length, size;
+  
+  //convenience variables to make this operation as close to atomic as we can
+  char* new_tmp;
+  char* old_tmp;
+  
+  //allocate and copy the new string
+  size = yaedUtilityUtf8GetSize(location, &length);
+  new_tmp = g_malloc(size);
+  g_utf8_strncpy(new_tmp, location, length);
+  new_tmp[size-1] = '\0';
+  
+  //save the old string
+  old_tmp = model->location;
+  //assign the new string
+  model->location = new_tmp;
+  //cleanup the old string
+  g_free(old_tmp);
+
   return true;
 }
 
@@ -120,15 +145,15 @@ bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
   GtkSourceLanguageManager* manager;
   gboolean result;
   gchar* contentType;
-  gchar* fileName;
+  //gchar* fileName;
   
   //do we have a valid file name?
-  fileName = 0 != model->location->len ? model->location->str : NULL;
+  //fileName = 0 != model->location->len ? model->location->str : NULL;
   //create the manager
   manager = gtk_source_language_manager_get_default();
   
   //try to get the content type
-  contentType = g_content_type_guess( fileName,
+  contentType = g_content_type_guess( model->location/*fileName*/,
                                       (guchar*)sample->str,
                                       sample->len,
                                       &result);
@@ -137,10 +162,10 @@ bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
     g_free(contentType);
     contentType = NULL;
   }
-  if(NULL != contentType || NULL != fileName)
+  if(NULL != contentType/* || NULL != fileName*/)
   {
     language = gtk_source_language_manager_guess_language(manager,
-                                                          fileName,
+                                                          model->location/*fileName*/,
                                                           contentType);
     gtk_source_buffer_set_language(model->buffer, language);
   }
@@ -156,7 +181,7 @@ bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
 void yaedSourceModelDestroy(YaedSourceModelHandle model)
 {
   //release the gtk objects
-  g_string_free(model->location, TRUE);
+  g_free(model->location);
   g_object_unref(model->buffer);
   //free the actual model structure
   g_slice_free(struct YaedSourceModel, model);

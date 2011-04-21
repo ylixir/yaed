@@ -19,9 +19,9 @@ mac:
 main.c: spider.h
 spider.c: spider.h utility.h
 utility.c: utility.h
-source-model.c: source-model.h spider.h
+source-model.c: source-model.h spider.h utility.h
 source-view.c: source-view.h tab-label.h tab-contents.h
-tab-label.c: tab-label.h spider.h
+tab-label.c: tab-label.h spider.h utility.h
 tab-contents.c: tab-contents.h location-bar.h
 location-bar.c: location-bar.h spider.h utility.h
 spider.h: source-view.h
