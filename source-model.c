@@ -145,15 +145,17 @@ bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
   GtkSourceLanguageManager* manager;
   gboolean result;
   gchar* contentType;
-  //gchar* fileName;
+  char* fileName;
   
   //do we have a valid file name?
-  //fileName = 0 != model->location->len ? model->location->str : NULL;
+  fileName =
+    0 != yaedUtilityUtf8GetLength(model->location, NULL)
+    ? model->location : NULL;
   //create the manager
   manager = gtk_source_language_manager_get_default();
   
   //try to get the content type
-  contentType = g_content_type_guess( model->location/*fileName*/,
+  contentType = g_content_type_guess( fileName,
                                       (guchar*)sample->str,
                                       sample->len,
                                       &result);
@@ -162,10 +164,10 @@ bool yaedSourceModelUpdateHighlighting( YaedSourceModelHandle model,
     g_free(contentType);
     contentType = NULL;
   }
-  if(NULL != contentType/* || NULL != fileName*/)
+  if(NULL != contentType || NULL != fileName)
   {
     language = gtk_source_language_manager_guess_language(manager,
-                                                          model->location/*fileName*/,
+                                                          fileName,
                                                           contentType);
     gtk_source_buffer_set_language(model->buffer, language);
   }
