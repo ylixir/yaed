@@ -32,4 +32,14 @@ bool yaedUtilityLocationExists(const char* path);
 //this function checks to see if this is a valid path
 bool yaedUtilityLocationHasValidPath(const char* path);
 
+//these functions get the dimensions of a null terminated utf8 string
+//they get both length and size at the same time so are better than glib funcs
+//the size includes the null terminator
+size_t yaedUtilityUtf8GetSize(const char* str, size_t* out_length);
+size_t yaedUtilityUtf8GetLength(const char* str, size_t* out_size);
+
+//this function expands "~/" style home paths to proper paths
+//the return value needs to be freed manually
+char* yaedUtilityExpandPath(const char* path);
+
 #endif

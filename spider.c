@@ -18,6 +18,7 @@ along with yAEd.  If not, see <http://www.perlfoundation.org>.
 *******************************************************************************/
 
 #include "spider.h"
+#include "utility.h"
 
 /*
  * private types
@@ -365,23 +366,28 @@ bool yaedSpiderLoadLocation(YaedSourceViewHandle view, const GString* location)
   
   //load/reload
   if(1 == new_model_count || new_model == old_model)
-  {if(TRUE==g_file_get_contents(location->str,&contents.str,&contents.len,NULL))
   {
-    //yay, we could lod the file, set the contents of the buffer and stuff
-    yaedSourceModelSetBufferContents(new_model, &contents);
-    yaedSourceModelUpdateHighlighting(new_model, &contents);
-    yaedSourceModelSetModified(new_model, false);
-    g_free(contents.str);
+    char* expanded_location = yaedUtilityExpandPath(location->str);
+    if(TRUE ==
+      g_file_get_contents(expanded_location,&contents.str,&contents.len,NULL))
+    {
+      //yay, we could lod the file, set the contents of the buffer and stuff
+      yaedSourceModelSetBufferContents(new_model, &contents);
+      yaedSourceModelUpdateHighlighting(new_model, &contents);
+      yaedSourceModelSetModified(new_model, false);
+      g_free(contents.str);
+    }
+    else if(new_model != old_model)
+    {
+      //oh noes, we couldn't load the file! abort!
+      new_model_count = yaedSourceModelDecrementReferenceCount(new_model);
+      old_model_count = yaedSourceModelIncrementReferenceCount(old_model);
+      yaedSourceModelDestroy(new_model);
+      new_model=old_model;
+      success = false;
+    }
+    g_free(expanded_location);
   }
-  else if(new_model != old_model)
-  {
-    //oh noes, we couldn't load the file! abort!
-    new_model_count = yaedSourceModelDecrementReferenceCount(new_model);
-    old_model_count = yaedSourceModelIncrementReferenceCount(old_model);
-    yaedSourceModelDestroy(new_model);
-    new_model=old_model;
-    success = false;
-  }}
   
   //tie in the new and improved model to the views tuple
   //this some of these operations will essentially be a noop, but the
@@ -404,11 +410,12 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   struct YaedViewListElement* iterator = NULL;
   YaedSourceModelHandle old_model = NULL;
   YaedSourceModelHandle new_model = NULL;
-  gchar* contents = NULL;
+  char* contents = NULL;
   GString* string_contents;
   GtkTextIter start;
   GtkTextIter end;
   GtkSourceBuffer* buffer;
+  char* expanded_location = NULL;
   
   //find the stuff, man
   for(iterator = view_list; NULL != iterator; iterator = iterator->next)
@@ -440,13 +447,18 @@ bool yaedSpiderStoreLocation(YaedSourceViewHandle view, const GString* location)
   view_element->model = new_model;
   if(0 == yaedSourceModelDecrementReferenceCount(old_model))
     yaedSourceModelDestroy(old_model);
-  g_file_set_contents(location->str,
+    
+  expanded_location = yaedUtilityExpandPath(location->str);
+  g_file_set_contents(expanded_location,
                       string_contents->str,
                       string_contents->len,
                       NULL);
+                      
   yaedSourceViewModelUpdate(view, new_model);
   yaedSourceModelUpdateHighlighting(new_model, string_contents);
   yaedSourceModelSetModified(new_model, false);
+  
+  g_free(expanded_location);
   g_string_free(string_contents, TRUE);
   
   return true;

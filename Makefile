@@ -17,7 +17,7 @@ mac:
 %.o: %.c
 	$(CC) -c $< $(CFLAGS)
 main.c: spider.h
-spider.c: spider.h
+spider.c: spider.h utility.h
 utility.c: utility.h
 source-model.c: source-model.h spider.h
 source-view.c: source-view.h tab-label.h tab-contents.h
