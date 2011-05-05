@@ -1,13 +1,17 @@
 CC=gcc
-#INC=$(shell pkg-config --cflags gtk+-2.0 gtksourceview-2.0)
-INC=`pkg-config --cflags gtk+-2.0 gtksourceview-2.0`
+ifdef GTK2
+	GTKVER=2.0
+else
+	GTKVER=3.0
+endif
+#INC=`pkg-config --cflags gtk+-2.0 gtksourceview-2.0`
+INC=`pkg-config --cflags gtk+-$(GTKVER) gtksourceview-$(GTKVER)`
 ifdef OSX
 	LFLAGS=-arch i386 $(shell pkg-config --libs gtk+-2.0 gtksourceview-2.0)
 	CFLAGS=-arch i386 -std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
 else
-#	LFLAGS=-export-dynamic $(shell pkg-config --libs gtk+-2.0 gtksourceview-2.0)
-	LFLAGS=-export-dynamic `pkg-config --libs gtk+-2.0 gtksourceview-2.0`
-	CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -g $(INC)
+	LFLAGS=-export-dynamic `pkg-config --libs gtk+-$(GTKVER) gtksourceview-$(GTKVER)`
+	CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-parameter -g $(INC)
 endif
 
 yaed: main.o utility.o spider.o source-model.o source-view.o tab-label.o tab-contents.o location-bar.o

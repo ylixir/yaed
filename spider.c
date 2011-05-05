@@ -122,9 +122,6 @@ void yaedSpiderTabSwitched( GtkNotebook* tab_strip,
                             gint page_num,
                             struct YaedWindowListElement* window_element)
 {
-  //screw you warnings
-  page = NULL;
-
   if(gtk_notebook_get_n_pages(tab_strip) == page_num+1)
   {
   //get the view widget
@@ -154,10 +151,6 @@ gboolean yaedSpiderWindowDeleteEvent(
 {
   struct YaedViewListElement** view_pointer;
   struct YaedWindowListElement** window_pointer;
-  
-  //keep the compiler happy
-  window = NULL;
-  event = NULL;
   
   //delete the "new" tab
   yaedSpiderDeleteNewTab(window_element);
@@ -209,8 +202,6 @@ gboolean yaedSpiderWindowDeleteEvent(
 //make sure the program quits when the last window is closed
 void yaedSpiderWindowDestroy(GtkWidget* window, gpointer user_data)
 {
-  window = NULL;
-  user_data = NULL;
   if(NULL == window_list)
     gtk_main_quit();
 }
@@ -289,7 +280,7 @@ bool yaedSpiderRequestViewClose(YaedSourceViewHandle view)
                           yaedSourceViewContentsWidget(view_element->view));
   
   //this is mostly to prevent switching to the "new" tab and hanging the program
-  if(gtk_notebook_current_page(window_element->tab_strip) == page_num)
+  if(gtk_notebook_get_current_page(window_element->tab_strip) == page_num)
     gtk_notebook_prev_page(window_element->tab_strip);
     
   //ditch the view

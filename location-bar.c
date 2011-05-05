@@ -48,13 +48,12 @@ void yaedLocationBarUpdateIconActions(
 {
   //the variables we will need
   const char* model_location; //where the model is currently pointing
-  bool model_modified, location_modified; //state variables
+  bool location_modified; //state variables
   const gchar* primary_icon = NULL; //the "save" icon
   const gchar* secondary_icon = NULL; //the "open" icon
 
   //set up the variables
   model_location = yaedSourceModelGetLocation(bar->model);
-  model_modified = yaedSourceModelGetModified(bar->model);
   location_modified =
     (0 == g_utf8_collate(model_location, bar_location)) ? false : true;
 

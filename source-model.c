@@ -42,7 +42,6 @@ struct YaedSourceModel
 void yaedSourceModelModifiedChangedEvent(GtkSourceBuffer* buffer,
   YaedSourceModelHandle model)
 {
-  buffer=0; //go away
   yaedSpiderRequestViewUpdateForModel(model);
 }
 
